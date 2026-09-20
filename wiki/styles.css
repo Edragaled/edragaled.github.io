@@ -584,6 +584,74 @@ td .with-icon > .sprite { height: 22px; max-width: 22px; flex: none; }
 /* One effect per line: a rank often grants two or three at once. */
 .upgrade-levels span { display: block; }
 
+/* -------------------------------------------------------------- skill tree */
+
+/* The map is one SVG at the tree's authored size, scaled to the column. It is
+   nearly square, so it is capped by height rather than left to run off. */
+.tree-map {
+  margin: 12px 0 14px;
+  padding: 12px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+}
+/* No height cap: the graph is nearly square, and squeezing it to fit the fold
+   collapsed the whole tree into an unreadable speck. */
+.tree-map svg { display: block; width: 100%; height: auto; }
+
+/* Stroke widths are in graph units, and the graph is ~4000 units wide: anything
+   under ~8 disappears once it is scaled into the column. */
+.tree-link { stroke: var(--line); stroke-width: 8; }
+.tree-link.on { stroke-width: 12; opacity: .6; }
+
+.tree-node { cursor: pointer; }
+/* Dimmed rather than hidden: a filtered class still reads against the whole tree. */
+.tree-node:not(.on) { opacity: .28; }
+.tree-node.on:hover { stroke: var(--text); stroke-width: 4; }
+
+.tree-legend { margin: 0 0 8px; }
+.legend {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 7px;
+  background: currentColor;
+  vertical-align: baseline;
+}
+.legend-root, .legend-classhub, .legend-passive, .legend-minor { border-radius: 50%; }
+.legend-notable { transform: rotate(45deg); }
+.legend-activeskill { border-radius: 2px; }
+.legend-minor { width: 7px; height: 7px; }
+
+.tree-rules { font-size: 13px; }
+.tree-rules li::before { background: var(--accent); }
+
+.tree-section { margin-top: 34px; }
+.tree-class-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--node, var(--text));
+}
+.tree-class-head img, .tree-class-head .sprite { width: 26px; height: 26px; }
+.tree-group { margin: 18px 0 10px; font-size: 14px; color: var(--text-dim); }
+
+/* Each card carries its class colour on the left edge, matching the map. */
+.tree-card { border-left: 3px solid var(--node, var(--line)); }
+.tree-desc { margin: 0 0 8px; font-size: 13px; color: var(--text-dim); }
+
+/* Jumped to from the map; the highlight fades on its own. */
+@keyframes tree-flash {
+  from { background: color-mix(in oklab, var(--accent) 30%, var(--bg-raised)); }
+  to { background: var(--bg-raised); }
+}
+.flash { animation: tree-flash 1.4s ease-out; }
+tr.flash { animation: tree-flash 1.4s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flash { animation: none; outline: 2px solid var(--accent); }
+}
+
 /* Talent ranks: roman numerals read as a column of labels, not as figures. */
 td.rank {
   font: 700 12px/1 var(--mono);

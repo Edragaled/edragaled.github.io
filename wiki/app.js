@@ -3,7 +3,7 @@
 
 'use strict';
 
-const DB = { items: [], monsters: [], loot: [], recipes: [], sets: [], buildings: [], gamemodes: [], talents: [], statuses: [], meta: null };
+const DB = { items: [], monsters: [], loot: [], recipes: [], sets: [], buildings: [], gamemodes: [], talents: [], statuses: [], skilltree: null, meta: null };
 const IX = {
   item: new Map(), monster: new Map(), loot: new Map(), recipe: new Map(),
   set: new Map(), building: new Map(), mode: new Map(), chapter: new Map(),
@@ -228,6 +228,7 @@ function renderHome() {
       <a class="stat-tile" href="#/buildings"><b>${nf(c.buildings)}</b><span>${esc(t('home.tile.buildings'))}</span></a>
       <a class="stat-tile" href="#/talents"><b>${nf(c.talents)}</b><span>${esc(t('home.tile.talents'))}</span></a>
       <a class="stat-tile" href="#/status"><b>${nf(c.statuses)}</b><span>${esc(t('home.tile.statuses'))}</span></a>
+      <a class="stat-tile" href="#/tree"><b>${nf(c.skillTreeNodes)}</b><span>${esc(t('home.tile.tree'))}</span></a>
       <a class="stat-tile" href="#/modes"><b>${nf(c.levels)}</b><span>${esc(t('home.tile.levels'))}</span></a>
     </div>
 
@@ -974,6 +975,214 @@ function renderTalents() {
   return frag;
 }
 
+/* --------------------------------------------------------------- skill tree */
+
+/** Shapes tell the node types apart at map scale, where a label would not fit. */
+const NODE_RADIUS = { Root: 54, ClassHub: 46, ActiveSkill: 32, Passive: 28, Capstone: 34, Notable: 24, Minor: 16 };
+
+const treeClass = (key) => DB.skilltree.classes.find((c) => c.key === key) ?? null;
+const treeColour = (node) => treeClass(node.classKey)?.colour ?? '#f0b32d';
+
+/**
+ * `+145 Max Health`, `+8% Crit Chance`.
+ *
+ * Percent grants are stored in hundredths and floored, never rounded up — the
+ * simulation would not grant the extra point, so neither does the wiki.
+ */
+const grantText = (g) => {
+  const amount = g.kind === 'Percent' ? `${Math.floor(g.value / 100)}%` : String(g.value);
+  return `${g.value < 0 ? '' : '+'}${amount} ${lb('stat', g.stat)}`;
+};
+
+/** A stat node has no authored name: the game builds one from its first grant. */
+const nodeTitle = (node) => {
+  if (node.name) return node.name;
+  const template = DB.skilltree.nameTemplates?.[node.type];
+  const stat = lb('stat', node.grants[0]?.stat);
+  return template ? template.replace(/\{\[NAME\]\}/g, stat) : stat;
+};
+
+const unlockText = (cost) => {
+  if (!cost) return null;
+  const parts = [];
+  if (cost.coins) parts.push(`${nf(cost.coins)} ${lb('currency', 'Coin')}`);
+  for (const m of cost.materials) parts.push(`${m.itemName} ×${nf(m.amount)}`);
+  return parts.join(' · ') || null;
+};
+
+/**
+ * The whole graph at its authored positions, so it reads like the tree in game.
+ * Links are drawn first, so a node always sits on top of its own edges.
+ */
+function treeMap(shownNodes) {
+  const b = DB.skilltree.bounds;
+  const pad = 80;
+  const width = (b.maxX - b.minX) + pad * 2;
+  const height = (b.maxY - b.minY) + pad * 2;
+  const px = (n) => n.x - b.minX + pad;
+  // Authored Y grows upward; SVG's grows downward.
+  const py = (n) => b.maxY - n.y + pad;
+
+  const byId = new Map(DB.skilltree.nodes.map((n) => [n.id, n]));
+  const shown = new Set(shownNodes.map((n) => n.id));
+
+  const edges = [];
+  for (const node of DB.skilltree.nodes) {
+    for (const id of node.links) {
+      const other = byId.get(id);
+      if (!other) continue;
+      const lit = shown.has(node.id) && shown.has(id);
+      edges.push(`<line x1="${px(node)}" y1="${py(node)}" x2="${px(other)}" y2="${py(other)}"
+        class="tree-link${lit ? ' on' : ''}"${lit ? ` stroke="${esc(treeColour(node))}"` : ''}/>`);
+    }
+  }
+
+  const marks = DB.skilltree.nodes.map((node) => {
+    const lit = shown.has(node.id);
+    const r = NODE_RADIUS[node.type] ?? 14;
+    const x = px(node);
+    const y = py(node);
+    // A diamond marks a notable and a square an active skill: the shape carries
+    // the type where there is no room for a word.
+    const shape = node.type === 'Notable'
+      ? `<rect x="${x - r}" y="${y - r}" width="${r * 2}" height="${r * 2}" rx="4" transform="rotate(45 ${x} ${y})"/>`
+      : node.type === 'ActiveSkill'
+        ? `<rect x="${x - r}" y="${y - r}" width="${r * 2}" height="${r * 2}" rx="6"/>`
+        : `<circle cx="${x}" cy="${y}" r="${r}"/>`;
+
+    return `<g class="tree-node${lit ? ' on' : ''}" fill="${esc(lit ? treeColour(node) : 'var(--line)')}" data-node="${node.id}">
+      <title>${esc(`${nodeTitle(node)} — ${lb('nodeType', node.type)}`)}</title>${shape}</g>`;
+  });
+
+  return `<div class="tree-map"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(t('tree.map'))}">
+    <g class="tree-links">${edges.join('')}</g>${marks.join('')}
+  </svg></div>`;
+}
+
+function treeNodeCard(node) {
+  const unlock = unlockText(node.cost);
+  return `<section class="panel tree-card" id="node-${node.id}" style="--node:${esc(treeColour(node))}">
+    <div class="skill-head" style="margin-bottom:8px">
+      <span class="thumb" style="width:40px;height:40px;flex:none">${iconImg(node.icon, nodeTitle(node))}</span>
+      <span>
+        <span class="skill-name" style="font-size:15px">${esc(nodeTitle(node))}</span>
+        <span class="skill-kind">${esc(lb('nodeType', node.type))} · ${esc(t('tree.tier', { n: node.tier }))}</span>
+      </span>
+    </div>
+    ${node.description ? `<p class="tree-desc">${esc(plain(node.description))}</p>` : ''}
+    ${node.grants.length ? `<ul class="status-effects">${node.grants.map((g) => `<li>${esc(grantText(g))}</li>`).join('')}</ul>` : ''}
+    <dl class="stats" style="margin-top:10px">
+      <div><dt>${esc(t('tree.points'))}</dt><dd>${nf(node.points)}</dd></div>
+      ${node.cost?.level ? `<div><dt>${esc(t('col.level'))}</dt><dd>${nf(node.cost.level)}</dd></div>` : ''}
+      ${unlock ? `<div><dt>${esc(t('tree.unlock'))}</dt><dd>${esc(unlock)}</dd></div>` : ''}
+    </dl>
+  </section>`;
+}
+
+/** 60 near-identical stat nodes per class read better as one dense table. */
+function minorTable(minors) {
+  if (!minors.length) return '';
+  return `<h3 class="tree-group">${esc(lb('nodeType', 'Minor'))} · ${nf(minors.length)}</h3>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>${esc(t('col.effect'))}</th>
+        <th class="num">${esc(t('col.tier'))}</th>
+        <th class="num">${esc(t('tree.points'))}</th>
+        <th>${esc(t('tree.unlock'))}</th>
+      </tr></thead>
+      <tbody>${minors.map((n) => `<tr id="node-${n.id}">
+        <td>${n.grants.map((g) => esc(grantText(g))).join(', ') || '—'}</td>
+        <td class="num">${nf(n.tier)}</td>
+        <td class="num">${nf(n.points)}</td>
+        <td>${esc(unlockText(n.cost) ?? '—')}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+function renderTree(params) {
+  const tree = DB.skilltree;
+  if (!tree?.nodes?.length) {
+    return el(`<div><h1>${esc(t('tree.title'))}</h1><p class="empty-note">${esc(t('tree.empty'))}</p></div>`);
+  }
+
+  const chosen = params.get('class') ?? 'all';
+  const keys = tree.classes.map((c) => c.key);
+  const shown = chosen === 'all' ? tree.nodes : tree.nodes.filter((n) => n.classKey === chosen);
+  const legend = ['Root', 'ClassHub', 'ActiveSkill', 'Passive', 'Notable', 'Minor'].filter((type) => tree.counts[type]);
+
+  const frag = el(`<div>
+    <h1>${esc(t('tree.title'))}</h1>
+    <p class="subtitle">${esc(t('tree.subtitle', { n: nf(tree.nodes.length), classes: nf(tree.classes.length) }))}</p>
+
+    <div class="grid" id="classes"></div>
+
+    <h2>${esc(t('tree.map'))}</h2>
+    <p class="empty-note">${esc(t('tree.mapNote'))}</p>
+    <div class="filters">
+      ${chipGroup(t('tree.class'), 'class', keys, chosen, Object.fromEntries(tree.classes.map((c) => [c.key, c.name])))}
+    </div>
+    <div id="map"></div>
+    <ul class="pill-list tree-legend">${legend.map((type) => `<li><span class="badge">
+      <i class="legend legend-${cls(type)}"></i>${esc(lb('nodeType', type))} · ${nf(tree.counts[type])}</span></li>`).join('')}</ul>
+
+    <h2>${esc(t('tree.rules'))}</h2>
+    <ul class="status-effects tree-rules">
+      <li>${esc(t('tree.rulePrereq'))}</li>
+      <li>${esc(t('tree.ruleOffClass', { n: tree.offClassMultiplier }))}</li>
+      <li>${esc(t('tree.ruleClasses', { n: nf(tree.extraClassDiamondCost) }))}</li>
+      ${tree.skillSlotDiamondCosts?.length ? `<li>${esc(t('tree.ruleSlots', { costs: tree.skillSlotDiamondCosts.map(nf).join(' / ') }))}</li>` : ''}
+    </ul>
+
+    <div id="sections"></div>
+  </div>`);
+
+  frag.getElementById('classes').append(...tree.classes.map((c) => el(`<a class="card" href="#/tree?class=${slug(c.key)}" style="--node:${esc(c.colour)}">
+    ${thumb(c.icon, c.name)}
+    <span class="card-body">
+      <span class="card-title">${esc(c.name)}</span>
+      <span class="card-sub">${esc(t('tree.nodeCount', { n: nf(c.nodes) }))}</span>
+    </span></a>`)));
+
+  frag.getElementById('map').append(el(treeMap(shown)));
+
+  const host = frag.getElementById('sections');
+  for (const c of tree.classes) {
+    if (chosen !== 'all' && c.key !== chosen) continue;
+    const own = tree.nodes.filter((n) => n.classKey === c.key);
+
+    host.append(el(`<section class="tree-section" style="--node:${esc(c.colour)}">
+      <h2 class="tree-class-head">${iconImg(c.icon, c.name)}<span>${esc(c.name)}</span></h2>
+      ${c.description ? `<p class="empty-note">${esc(plain(c.description))}</p>` : ''}
+      ${['ActiveSkill', 'Passive', 'Notable'].map((type) => {
+    const list = own.filter((n) => n.type === type);
+    if (!list.length) return '';
+    return `<h3 class="tree-group">${esc(lb('nodeType', type))} · ${nf(list.length)}</h3>
+          <div class="panels">${list.map(treeNodeCard).join('')}</div>`;
+  }).join('')}
+      ${minorTable(own.filter((n) => n.type === 'Minor'))}
+    </section>`));
+  }
+
+  wireFilters(frag);
+  wireTreeMap(frag);
+  return frag;
+}
+
+/** Clicking a node on the map jumps to its card or row below. */
+function wireTreeMap(root) {
+  root.querySelectorAll('.tree-node[data-node]').forEach((mark) => {
+    mark.addEventListener('click', () => {
+      const target = document.getElementById(`node-${mark.dataset.node}`);
+      if (!target) return;
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      target.classList.remove('flash');
+      // Reflow, so the highlight replays when the same node is clicked twice.
+      void target.offsetWidth;
+      target.classList.add('flash');
+    });
+  });
+}
+
 /* --------------------------------------------------------------- game modes */
 
 const modeLevelCount = (m) => m.groups.reduce((n, g) => n + g.sets.reduce((k, s) => k + s.levels.length, 0), 0);
@@ -1275,6 +1484,10 @@ function searchAll(query) {
   for (const b of DB.buildings) push(t('hit.Building'), b.name, `#/buildings`, b.icon, b.key);
   for (const talent of DB.talents) push(t('hit.Talent'), talent.name, `#/talents`, talent.icon, talent.key);
   for (const st of DB.statuses) push(t(st.group === 'Debuff' ? 'hit.Debuff' : 'hit.Buff'), st.name, `#/status`, st.icon, st.key);
+  // Only named nodes are searchable: a stat node has no name of its own.
+  for (const n of DB.skilltree?.nodes ?? []) {
+    if (n.name) push(t('hit.Node'), n.name, `#/tree?class=${slug(n.classKey ?? 'all')}`, n.icon, String(n.id));
+  }
   for (const m of DB.gamemodes) {
     push(t('hit.Mode'), m.name, `#/mode/${slug(m.key)}`, m.icon, m.key);
     for (const g of m.groups) push(m.key === 'adventure' ? t('hit.Chapter') : m.name, g.name, `#/chapter/${slug(g.key)}`, null, g.key);
@@ -1370,6 +1583,7 @@ function route() {
       case 'buildings': content = renderBuildings(params); break;
       case 'talents': content = renderTalents(); break;
       case 'status': content = renderStatuses(params); break;
+      case 'tree': content = renderTree(params); break;
       case 'modes': content = renderModes(); break;
       case 'mode': content = renderMode(key); break;
       case 'chapter': content = renderChapter(key, params); break;
@@ -1403,7 +1617,7 @@ function route() {
 
 const TITLE_OF = {
   items: 'items.title', monsters: 'monsters.title', loot: 'loot.title', recipes: 'recipes.title',
-  sets: 'sets.title', buildings: 'buildings.title', talents: 'talents.title', status: 'status.title',
+  sets: 'sets.title', buildings: 'buildings.title', talents: 'talents.title', status: 'status.title', tree: 'tree.title',
   modes: 'modes.title',
 };
 
@@ -1421,7 +1635,7 @@ window.addEventListener('hashchange', route);
 
 /* --------------------------------------------------------------------- boot */
 
-const PAYLOADS = ['items', 'monsters', 'loot', 'recipes', 'sets', 'buildings', 'gamemodes', 'talents', 'statuses', 'meta'];
+const PAYLOADS = ['items', 'monsters', 'loot', 'recipes', 'sets', 'buildings', 'gamemodes', 'talents', 'statuses', 'skilltree', 'meta'];
 
 /**
  * Load one language's payloads. A language is a whole data set rather than an
@@ -1531,7 +1745,7 @@ function applyChrome() {
 
 /** Populate DB and the lookup indexes from the loaded payloads. */
 function install(payloads) {
-  [DB.items, DB.monsters, DB.loot, DB.recipes, DB.sets, DB.buildings, DB.gamemodes, DB.talents, DB.statuses, DB.meta] = payloads;
+  [DB.items, DB.monsters, DB.loot, DB.recipes, DB.sets, DB.buildings, DB.gamemodes, DB.talents, DB.statuses, DB.skilltree, DB.meta] = payloads;
 
   // Keys are the project's, so they are identical in every language — but clear
   // anyway, so a language that drops an entry cannot leave the old one reachable.

@@ -25,6 +25,7 @@ import { readStatusEffectScripts, describeStatusEffect } from './lib/status-effe
 import { loadLanguages } from './lib/i18n.mjs';
 import { loadUiStrings } from './lib/ui-strings.mjs';
 import { readUpgradeScripts, effectsForLevel, fillUpgradeLine, PLAYER_UPGRADE_RARITIES, PLAYER_UPGRADE_CATEGORIES } from './lib/bastion.mjs';
+import { decodeLinkedIds, assignClasses, addPrerequisites, NODE_TYPES as SKILL_NODE_TYPES, GRANT_KINDS as SKILL_GRANT_KINDS } from './lib/skilltree.mjs';
 import * as E from './lib/enums.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -72,6 +73,7 @@ const STATUS_EFFECT_SCRIPTS = join(ASSETS, 'QuantumUser', 'Simulation', 'AssetTy
 const UI_STRINGS = join(HERE, 'ui');
 const BASTION_UPGRADE_SCRIPTS = join(ASSETS, 'QuantumUser', 'Simulation', 'AssetTypes', 'Bastion', 'Upgrades', 'PlayerUpgrades');
 const BASTION_UPGRADE_ASSETS = join(ASSETS, 'QuantumUser', 'Resources', 'DB', 'Bastion', 'PlayerUpgrades');
+const SKILLTREE_CONFIG_SOURCE = join(ASSETS, 'Core', 'Scripts', 'Systems', 'SkillTreeSystem', 'SkillTreeConfig.cs');
 
 // The biome folders under LootTables/Monsters and the generator name prefixes
 // disagree on one name; the folder spelling is what the wiki shows.
@@ -1090,6 +1092,154 @@ function extractBuildings(guidIndex, en, itemsByGuid) {
   return buildings;
 }
 
+// --------------------------------------------------------------- skill tree
+
+/**
+ * The player skill tree.
+ *
+ * There is no single tree asset: every node is its own ScriptableObject holding
+ * its grants, its price and its outgoing links, so the graph is rebuilt from all
+ * of them. Positions are authored, which is what lets the site draw the same map
+ * the game draws.
+ */
+function extractSkillTree(guidIndex, quantumIndex, L, itemsByGuid) {
+  const root = join(SO, 'SkillTree');
+  if (!existsSync(root)) { warn('no SkillTree folder — the skill tree is skipped'); return null; }
+
+  const config = readUnityYaml(join(root, 'SkillTreeConfig.asset'))[0]?.body ?? {};
+  const source = readFileSync(SKILLTREE_CONFIG_SOURCE, 'utf8');
+  // Two prices were added to the class after the asset was last written, so Unity
+  // never serialized them: the C# initializer is what the game actually uses.
+  const csDefault = (field) => Number(/=\s*(\d+)\s*;/.exec(
+    new RegExp(`private\\s+int\\s+${field}\\s*=[^;]*;`).exec(source)?.[0] ?? '',
+  )?.[1] ?? 0);
+  const csDefaultList = (field) => (/\{([^}]*)\}/.exec(
+    new RegExp(`private\\s+List<int>\\s+${field}\\s*=[^;]*;`).exec(source)?.[0] ?? '',
+  )?.[1] ?? '').split(',').map((n) => Number(n.trim())).filter(Number.isFinite);
+
+  const activation = new Map();
+  for (const cost of config._activationCosts ?? []) {
+    activation.set(E.named(SKILL_NODE_TYPES, cost.Type, 'Minor'), num(cost.Points));
+  }
+
+  const statIcons = new Map();
+  const iconSet = config._statIcons?.guid && guidIndex.get(config._statIcons.guid);
+  for (const entry of (iconSet ? readUnityYaml(iconSet)[0]?.body?._entries ?? [] : [])) {
+    const stat = E.named(E.StatIndexes, entry.Index, null);
+    if (!stat) continue;
+    statIcons.set(stat, queueIcon(entry.Icon, guidIndex, 'skilltree', `stat_${cleanKey(stat)}`));
+  }
+
+  const classes = [];
+  const classByGuid = new Map();
+  for (const file of walk(root, (p) => isAsset(p) && /Class\.asset$/.test(p))) {
+    const b = readUnityYaml(file)[0]?.body;
+    if (!b?._name) continue;
+    const entry = {
+      key: cleanKey(b._name),
+      id: num(b._class),
+      name: L.get(`SkillTree/${b._name}`) ?? b._name,
+      description: L.get(`SkillTree/${b._name}Description`) ?? null,
+      colour: rgbaHex(b._color),
+      icon: queueIcon(b._crest, guidIndex, 'skilltree', cleanKey(b._name)),
+      nodes: 0,
+    };
+    classes.push(entry);
+    const guid = readMetaGuid(file);
+    if (guid) classByGuid.set(guid, entry);
+  }
+  classes.sort((a, b) => a.id - b.id);
+
+  const nodes = [];
+  for (const { file, doc } of loadDocs(walk(join(root, 'Nodes'), isAsset))) {
+    const b = doc.body;
+    if (b?._id == null) continue;
+
+    const type = E.named(SKILL_NODE_TYPES, b._type, 'Minor');
+    const named = ['ClassHub', 'ActiveSkill', 'Passive', 'Capstone', 'Root'].includes(type);
+    const granted = b._grantedSkill?.Id?.Value || b._grantedPassive?.Id?.Value;
+    const asset = granted ? quantumIndex.get(String(granted)) : null;
+    if (granted && !asset) warn(`skill tree node ${b._id} grants asset ${granted}, which does not resolve`);
+
+    const grants = (b._grants ?? []).map((g) => ({
+      stat: E.named(E.StatIndexes, g.Index, 'Max Health'),
+      kind: E.named(SKILL_GRANT_KINDS, g.Kind, 'Flat'),
+      value: num(g.Value),
+    }));
+
+    const key = cleanKey(basename(file, '.asset'));
+    const icon = asset
+      ? queueIcon(asset.body.Icon, guidIndex, 'skilltree', key)
+      : (b._icon?.guid ? queueIcon(b._icon, guidIndex, 'skilltree', key) : null);
+
+    nodes.push({
+      id: num(b._id),
+      type,
+      tier: num(b._tier),
+      classKey: classByGuid.get(b._class?.guid)?.key ?? null,
+      name: named && b._name ? L.get(`SkillTree/${b._name}`) ?? prettify(b._name) : null,
+      description: named && b._name ? L.get(`SkillTree/${b._name}Description`) ?? null : null,
+      grants,
+      icon: icon ?? statIcons.get(grants[0]?.stat) ?? null,
+      // Root and the hubs cost nothing and cannot be bought.
+      cost: type === 'Root' || type === 'ClassHub' ? null : {
+        level: num(b._unlockLevelRequirement),
+        coins: num(b._unlockCoinCost),
+        materials: (b._unlockItems ?? []).map((m) => {
+          const item = itemsByGuid.get(m.ItemData?.guid);
+          return { item: item?.key ?? null, itemName: item?.name ?? null, amount: num(m.Amount) };
+        }).filter((m) => m.item),
+      },
+      points: activation.get(type) ?? 0,
+      x: Math.round(num(b._position?.x)),
+      y: Math.round(num(b._position?.y)),
+      links: decodeLinkedIds(file, warn),
+      isEntry: Boolean(num(b._isFirstNode)),
+    });
+  }
+
+  nodes.sort((a, b) => a.id - b.id);
+  assignClasses(nodes, warn);
+  addPrerequisites(nodes);
+  for (const node of nodes) {
+    const owner = classes.find((c) => c.key === node.classKey);
+    if (owner) owner.nodes += 1;
+  }
+
+  const counts = {};
+  for (const node of nodes) counts[node.type] = (counts[node.type] ?? 0) + 1;
+
+  return {
+    classes,
+    nodes,
+    counts,
+    // "Minor {[NAME]}" / "Notable {[NAME]}" — the game names a stat node after its
+    // first grant, and the sheet already carries the pattern in every language.
+    nameTemplates: {
+      Minor: L.get('SkillTree/MinorName') ?? 'Minor {[NAME]}',
+      Notable: L.get('SkillTree/NotableName') ?? 'Notable {[NAME]}',
+    },
+    // Activating a node off your main class costs this much more.
+    offClassMultiplier: num(config._offClassCostMultiplier) || 1,
+    extraClassDiamondCost: num(config._extraClassDiamondCost) || csDefault('_extraClassDiamondCost'),
+    skillSlotDiamondCosts: (config._skillSlotDiamondCosts ?? []).map(num).filter((n) => n)
+      .length ? (config._skillSlotDiamondCosts ?? []).map(num) : csDefaultList('_skillSlotDiamondCosts'),
+    bounds: {
+      minX: Math.min(...nodes.map((n) => n.x)),
+      maxX: Math.max(...nodes.map((n) => n.x)),
+      minY: Math.min(...nodes.map((n) => n.y)),
+      maxY: Math.max(...nodes.map((n) => n.y)),
+    },
+  };
+}
+
+/** `{r: 0.44, g: 0.9, b: 1}` -> `#71e5ff`. */
+function rgbaHex(colour) {
+  if (!colour) return null;
+  const byte = (v) => Math.max(0, Math.min(255, Math.round(num(v) * 255))).toString(16).padStart(2, '0');
+  return `#${byte(colour.r)}${byte(colour.g)}${byte(colour.b)}`;
+}
+
 // ------------------------------------------------------------------ bastion
 
 const cleanKey = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -1884,8 +2034,9 @@ function extractLocalized(L, structural) {
   const gamemodes = extractGameModes(guidIndex, L, monsterLookup, generators, itemsByGuid);
   const bastion = extractBastion(guidIndex, L, monsterLookup);
   if (bastion) gamemodes.push(bastion);
+  const skilltree = extractSkillTree(guidIndex, quantumIndex, L, itemsByGuid);
 
-  return { items, sets, tables, monsters, hidden, banners, recipes, statuses, talents, buildings, gamemodes, itemsByGuid, fileByKey };
+  return { items, sets, tables, monsters, hidden, banners, recipes, statuses, talents, buildings, gamemodes, skilltree, itemsByGuid, fileByKey };
 }
 
 /**
@@ -1915,6 +2066,7 @@ function buildLabels(L, ui, vocab) {
       Crest: 'Shop/Crest',
     }[v] ?? null),
     buildingCategory: (v) => (v === 'Resource' ? 'Shop/Resource' : null),
+    nodeType: (v) => `SkillTree/${v}`,
   };
 
   const labels = {};
@@ -1939,7 +2091,6 @@ function collectVocabulary(p) {
     slot: uniq(p.items.map((i) => i.slot)),
     difficulty: uniq([...p.tables.flatMap((t) => t.spawns.map((s) => s.difficulty)),
       ...p.gamemodes.flatMap((m) => m.groups.flatMap((g) => g.sets.map((s) => s.label)))]),
-    stat: uniq(p.sets.flatMap((s) => s.bonuses.map((b) => b.stat))),
     station: uniq(p.recipes.map((r) => r.station)),
     currency: uniq([...p.buildings.map((b) => b.purchase.currency),
       ...p.gamemodes.flatMap((m) => m.groups.flatMap((g) => g.sets.flatMap((s) => s.levels.map((l) => l.costCurrency))))]),
@@ -1949,6 +2100,9 @@ function collectVocabulary(p) {
     buildingCategory: uniq(p.buildings.map((b) => b.category)),
     setKind: uniq(p.gamemodes.flatMap((m) => m.groups.map((g) => g.setKind))),
     upgradeCategory: uniq(p.gamemodes.flatMap((m) => (m.bastion?.upgrades ?? []).map((u) => u.category))),
+    stat: uniq([...p.sets.flatMap((s) => s.bonuses.map((b) => b.stat)),
+      ...(p.skilltree?.nodes ?? []).flatMap((n) => n.grants.map((g) => g.stat))]),
+    nodeType: uniq((p.skilltree?.nodes ?? []).map((n) => n.type)),
     enemyType: uniq(p.gamemodes.flatMap((m) => m.groups.flatMap((g) => g.sets.flatMap((s) => s.levels.flatMap((l) => l.waves.flatMap((w) => w.enemies.map((e) => e.type)))))))
   };
 }
@@ -2011,6 +2165,7 @@ function main() {
       buildings: p.buildings.length,
       talents: p.talents.length,
       statuses: p.statuses.length,
+      skillTreeNodes: p.skilltree?.nodes.length ?? 0,
       chapters: p.gamemodes.find((m) => m.key === 'adventure')?.groups.length ?? 0,
       gameModes: p.gamemodes.length,
       levels: levels.length,
@@ -2054,10 +2209,11 @@ function main() {
     langBytes += write('gamemodes.json', p.gamemodes);
     langBytes += write('talents.json', p.talents);
     langBytes += write('statuses.json', p.statuses);
+    langBytes += write('skilltree.json', p.skilltree ?? { classes: [], nodes: [], counts: {} });
     langBytes += write('meta.json', meta);
     bytes += langBytes;
 
-    everything.push(p.items, p.monsters, p.tables, p.recipes, p.sets, p.buildings, p.gamemodes, p.talents, p.statuses, meta);
+    everything.push(p.items, p.monsters, p.tables, p.recipes, p.sets, p.buildings, p.gamemodes, p.talents, p.statuses, p.skilltree, meta);
     console.log(`  ${code} (${name}): ${(langBytes / 1024).toFixed(0)} KB`);
   }
 

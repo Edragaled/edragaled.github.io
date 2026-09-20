@@ -360,6 +360,55 @@ placeholder renders as a literal `{n}` on the page.
 Nothing else is translated: the marketing and legal pages at the repository root
 are English only. Terms and a privacy policy are not something to machine-translate.
 
+## The skill tree is rebuilt from 283 separate assets
+
+There is no tree asset. Every node is its own ScriptableObject holding its grants,
+its price, its position and its outgoing links, so the graph is reassembled from
+all of them. Two things need care.
+
+**`_linkedNodesIds` must be read from the raw text.** It is a Unity-serialized
+`List<int>` written as a hex byte string — `1400000043000000` is 20 then 67,
+little-endian. Several of those strings are also valid numbers, and ten of them
+parse as *scientific notation*, so taking the value from the parsed document
+silently corrupts the graph. `lib/skilltree.mjs` reads the line itself.
+
+**Only class hubs declare a class.** Every other node inherits it, and the links
+are directed — they mean "the nodes I open" — so walking them forward from each
+hub covers that hub's whole branch. A node reachable from two hubs, a link to a
+node that does not exist, or a node hanging from no hub at all is reported.
+
+The links being directed also means a node's prerequisites are its *incoming*
+links, and it needs them all. That is why the page says so in its rules rather
+than drawing arrows: the map would be unreadable at 283 nodes and 360 edges.
+
+### The map is drawn at the authored positions
+
+`_position` is real layout data, so the SVG is the tree as the game draws it —
+Warden above, Gladiator bottom-right, Enchanter bottom-left, Origin near the
+middle. Shape carries the type where no label fits: a diamond is a notable, a
+square an active skill, a circle everything else.
+
+Stroke widths and radii are in graph units, and the graph is about 4000 units
+wide. Anything under ~8 units of stroke vanishes once it is scaled into the
+column, which is exactly what the first version did.
+
+### Names, labels and generated titles come from the sheet
+
+Named nodes use `SkillTree/<name>` and its `Description`. Minor and notable
+nodes have no authored name: the game builds one from their first grant using
+`SkillTree/MinorName` / `SkillTree/NotableName` (`"Notable {[NAME]}"`), and the
+wiki fills the same template, so a French reader sees the same "Def (notable)"
+they see in game. The type labels are `SkillTree/<Type>` too; only `Root` has no
+term and lives in `tools/ui/`.
+
+Percent grants are stored in hundredths and **floored**, never rounded up — the
+simulation would not grant the extra point.
+
+Two prices — the extra-class cost and the skill-slot costs — are absent from
+`SkillTreeConfig.asset` because they were added to the class after it was last
+written. Unity therefore falls back to the C# field initializers, so the
+extractor reads those from `SkillTreeConfig.cs` when the asset is silent.
+
 ## Bastion has no authored waves
 
 Every other mode is a list: chapters hold levels, levels hold waves, and the
