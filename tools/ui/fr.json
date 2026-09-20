@@ -245,9 +245,9 @@
   "tree.unlock": "Déblocage",
   "tree.rules": "Fonctionnement",
   "tree.rulePrereq": "Un nœud à plusieurs parents les exige tous, au déblocage comme à l’activation.",
-  "tree.ruleOffClass": "Activer un nœud hors de ta classe principale coûte {n}× plus de points.",
   "tree.ruleClasses": "La première classe est offerte ; chaque classe supplémentaire coûte {n} diamants.",
   "tree.ruleSlots": "Les emplacements de compétence supplémentaires coûtent {costs} diamants.",
   "hit.Node": "Nœud",
-  "vocab.nodeType.Root": "Origine"
+  "vocab.nodeType.Root": "Origine",
+  "tree.ruleOneClass": "Une seule classe à la fois : seule la branche de ta classe est accessible, un build ne peut donc pas en mélanger deux."
 }

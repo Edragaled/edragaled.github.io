@@ -1128,7 +1128,7 @@ function renderTree(params) {
     <h2>${esc(t('tree.rules'))}</h2>
     <ul class="status-effects tree-rules">
       <li>${esc(t('tree.rulePrereq'))}</li>
-      <li>${esc(t('tree.ruleOffClass', { n: tree.offClassMultiplier }))}</li>
+      <li>${esc(t('tree.ruleOneClass'))}</li>
       <li>${esc(t('tree.ruleClasses', { n: nf(tree.extraClassDiamondCost) }))}</li>
       ${tree.skillSlotDiamondCosts?.length ? `<li>${esc(t('tree.ruleSlots', { costs: tree.skillSlotDiamondCosts.map(nf).join(' / ') }))}</li>` : ''}
     </ul>

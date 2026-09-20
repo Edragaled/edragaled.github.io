@@ -245,9 +245,9 @@
   "tree.unlock": "해금 비용",
   "tree.rules": "규칙",
   "tree.rulePrereq": "부모가 여럿인 노드는 해금할 때도 활성화할 때도 부모 전부가 필요합니다.",
-  "tree.ruleOffClass": "주 직업 밖의 노드를 활성화하면 스킬 포인트가 {n}배 듭니다.",
   "tree.ruleClasses": "첫 직업은 무료이고, 추가 직업은 하나당 다이아 {n}개입니다.",
   "tree.ruleSlots": "추가 스킬 슬롯은 다이아 {costs}개입니다.",
   "hit.Node": "노드",
-  "vocab.nodeType.Root": "기원"
+  "vocab.nodeType.Root": "기원",
+  "tree.ruleOneClass": "한 번에 한 직업만: 자기 직업의 가지만 열리므로, 빌드가 두 직업에 걸칠 일은 없습니다."
 }

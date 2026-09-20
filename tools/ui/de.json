@@ -245,9 +245,9 @@
   "tree.unlock": "Freischaltung",
   "tree.rules": "So funktioniert es",
   "tree.rulePrereq": "Ein Knoten mit mehreren Elternknoten braucht sie alle — zum Freischalten wie zum Aktivieren.",
-  "tree.ruleOffClass": "Einen Knoten außerhalb deiner Hauptklasse zu aktivieren kostet das {n}-Fache an Punkten.",
   "tree.ruleClasses": "Die erste Klasse ist kostenlos; jede weitere kostet {n} Diamanten.",
   "tree.ruleSlots": "Zusätzliche Fähigkeitsplätze kosten {costs} Diamanten.",
   "hit.Node": "Knoten",
-  "vocab.nodeType.Root": "Ursprung"
+  "vocab.nodeType.Root": "Ursprung",
+  "tree.ruleOneClass": "Immer nur eine Klasse: nur der Zweig deiner Klasse steht offen, ein Build umfasst also nie zwei."
 }

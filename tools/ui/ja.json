@@ -245,9 +245,9 @@
   "tree.unlock": "解放コスト",
   "tree.rules": "仕組み",
   "tree.rulePrereq": "親が複数あるノードは、解放にも起動にもその全てを必要とします。",
-  "tree.ruleOffClass": "メインクラス外のノードの起動には、スキルポイントが {n} 倍かかります。",
   "tree.ruleClasses": "最初のクラスは無料で、追加のクラスは 1 つにつきダイヤ {n} 個です。",
   "tree.ruleSlots": "追加のスキルスロットはダイヤ {costs} 個です。",
   "hit.Node": "ノード",
-  "vocab.nodeType.Root": "起点"
+  "vocab.nodeType.Root": "起点",
+  "tree.ruleOneClass": "クラスは常に 1 つだけ。自分のクラスの枝しか開かないため、ビルドが 2 クラスにまたがることはありません。"
 }

@@ -245,9 +245,9 @@
   "tree.unlock": "Mở khóa",
   "tree.rules": "Cách hoạt động",
   "tree.rulePrereq": "Nút có nhiều nút cha đòi hỏi đủ tất cả, cả khi mở khóa lẫn khi kích hoạt.",
-  "tree.ruleOffClass": "Kích hoạt nút ngoài lớp chính tốn gấp {n} lần điểm kỹ năng.",
   "tree.ruleClasses": "Lớp đầu tiên miễn phí; mỗi lớp thêm tốn {n} kim cương.",
   "tree.ruleSlots": "Ô kỹ năng thêm tốn {costs} kim cương.",
   "hit.Node": "Nút",
-  "vocab.nodeType.Root": "Khởi nguồn"
+  "vocab.nodeType.Root": "Khởi nguồn",
+  "tree.ruleOneClass": "Mỗi lần chỉ một lớp: chỉ nhánh của lớp bạn mở ra, nên một build không bao giờ trải trên hai lớp."
 }

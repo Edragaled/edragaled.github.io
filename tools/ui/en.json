@@ -246,9 +246,9 @@
   "tree.unlock": "Unlock",
   "tree.rules": "How it works",
   "tree.rulePrereq": "A node with several parents needs them all, both to unlock and to activate.",
-  "tree.ruleOffClass": "Activating a node outside your main class costs {n}× the skill points.",
   "tree.ruleClasses": "Your first class is free; each extra class costs {n} diamonds.",
   "tree.ruleSlots": "Extra active-skill slots cost {costs} diamonds.",
   "hit.Node": "Skill node",
-  "vocab.nodeType.Root": "Origin"
+  "vocab.nodeType.Root": "Origin",
+  "tree.ruleOneClass": "One class at a time: only your class’s branch is available, so a build never spans two."
 }

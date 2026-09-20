@@ -245,9 +245,9 @@
   "tree.unlock": "Desbloqueio",
   "tree.rules": "Como funciona",
   "tree.rulePrereq": "Um nó com vários pais exige-os todos, tanto para desbloquear como para ativar.",
-  "tree.ruleOffClass": "Ativar um nó fora da tua classe principal custa {n}× os pontos.",
   "tree.ruleClasses": "A primeira classe é grátis; cada classe extra custa {n} diamantes.",
   "tree.ruleSlots": "Os espaços de habilidade adicionais custam {costs} diamantes.",
   "hit.Node": "Nó",
-  "vocab.nodeType.Root": "Origem"
+  "vocab.nodeType.Root": "Origem",
+  "tree.ruleOneClass": "Uma classe de cada vez: só o ramo da tua classe está disponível, por isso uma build nunca junta duas."
 }

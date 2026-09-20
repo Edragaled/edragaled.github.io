@@ -245,9 +245,9 @@
   "tree.unlock": "Desbloqueo",
   "tree.rules": "Cómo funciona",
   "tree.rulePrereq": "Un nodo con varios padres los exige todos, tanto para desbloquear como para activar.",
-  "tree.ruleOffClass": "Activar un nodo fuera de tu clase principal cuesta {n}× los puntos.",
   "tree.ruleClasses": "La primera clase es gratis; cada clase adicional cuesta {n} diamantes.",
   "tree.ruleSlots": "Las ranuras de habilidad adicionales cuestan {costs} diamantes.",
   "hit.Node": "Nodo",
-  "vocab.nodeType.Root": "Origen"
+  "vocab.nodeType.Root": "Origen",
+  "tree.ruleOneClass": "Una clase a la vez: solo está disponible la rama de tu clase, así que una build nunca mezcla dos."
 }

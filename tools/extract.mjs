@@ -1219,8 +1219,6 @@ function extractSkillTree(guidIndex, quantumIndex, L, itemsByGuid) {
       Minor: L.get('SkillTree/MinorName') ?? 'Minor {[NAME]}',
       Notable: L.get('SkillTree/NotableName') ?? 'Notable {[NAME]}',
     },
-    // Activating a node off your main class costs this much more.
-    offClassMultiplier: num(config._offClassCostMultiplier) || 1,
     extraClassDiamondCost: num(config._extraClassDiamondCost) || csDefault('_extraClassDiamondCost'),
     skillSlotDiamondCosts: (config._skillSlotDiamondCosts ?? []).map(num).filter((n) => n)
       .length ? (config._skillSlotDiamondCosts ?? []).map(num) : csDefaultList('_skillSlotDiamondCosts'),

@@ -245,9 +245,9 @@
   "tree.unlock": "解锁花费",
   "tree.rules": "规则",
   "tree.rulePrereq": "有多个前置的节点需要全部前置，解锁和激活都是如此。",
-  "tree.ruleOffClass": "激活主职业之外的节点，技能点花费为 {n} 倍。",
   "tree.ruleClasses": "第一个职业免费，之后每个职业需 {n} 钻石。",
   "tree.ruleSlots": "额外技能栏位需 {costs} 钻石。",
   "hit.Node": "节点",
-  "vocab.nodeType.Root": "起点"
+  "vocab.nodeType.Root": "起点",
+  "tree.ruleOneClass": "同一时间只有一个职业：只有你所选职业的分支可用，因此一套加点不会跨越两个职业。"
 }
