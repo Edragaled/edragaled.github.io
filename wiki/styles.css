@@ -584,6 +584,62 @@ td .with-icon > .sprite { height: 22px; max-width: 22px; flex: none; }
 /* One effect per line: a rank often grants two or three at once. */
 .upgrade-levels span { display: block; }
 
+/* ------------------------------------------------------------ calculators */
+
+.calc { margin-bottom: 14px; }
+
+.calc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.calc-row > span:first-child {
+  flex: 0 0 130px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.calc-row input[type="range"] { flex: 1 1 180px; min-width: 140px; accent-color: var(--accent); }
+
+.calc-value {
+  flex: 0 0 72px;
+  text-align: right;
+  font: 600 13px/1 var(--mono);
+  color: var(--text);
+}
+
+.calc-result {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+.calc-result > div { text-align: center; }
+.calc-result b {
+  display: block;
+  font: 700 24px/1.1 var(--mono);
+  color: var(--accent);
+}
+.calc-result span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-faint);
+}
+
+.calc-formula { margin: 12px 0 0; text-align: center; }
+.calc-formula code { font-size: 12px; color: var(--text-dim); }
+
+/* The matchup toggle reuses the filter chips, so it needs no styling of its own
+   beyond sitting on the same row as its label. */
+.calc .filter-group { margin: 0 0 12px; }
+
+.combat-notes { font-size: 13px; }
+.combat-notes li::before { background: var(--accent); }
+
 /* -------------------------------------------------------------- skill tree */
 
 /* The map is one SVG at the tree's authored size, scaled to the column. It is

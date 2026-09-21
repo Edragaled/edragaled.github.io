@@ -975,6 +975,170 @@ function renderTalents() {
   return frag;
 }
 
+/* ------------------------------------------------------------------- combat */
+
+const DEFENSE_SAMPLES = [0, 100, 200, 400, 800, 1600, 3000];
+
+/** The share of an ordinary hit that Defense removes, straight from the sim. */
+const negatedShare = (defense, reference) => (reference + defense <= 0 ? 0 : defense / (reference + defense));
+
+/** `max(Resistance − Accuracy, floor)` — nothing is ever fully reliable. */
+const resistShare = (resistance, accuracy, floor) => Math.max(resistance - accuracy, floor);
+
+const pct = (share, digits = 1) => `${(share * 100).toFixed(digits)}%`;
+
+function renderCombat() {
+  const c = DB.meta?.combat;
+  if (!c) return el(`<div><h1>${esc(t('combat.title'))}</h1><p class="empty-note">${esc(t('combat.empty'))}</p></div>`);
+
+  const ref = c.defenseReference;
+
+  const frag = el(`<div>
+    <h1>${esc(t('combat.title'))}</h1>
+    <p class="subtitle">${esc(t('combat.subtitle'))}</p>
+
+    <h2>${esc(t('combat.defense'))}</h2>
+    <p class="empty-note">${esc(c.usesFixedReference
+    ? t('combat.defenseNote', { ref: nf(ref) })
+    : t('combat.defenseNoteAttack'))}</p>
+
+    <section class="panel calc">
+      <label class="calc-row">
+        <span>${esc(lb('stat', 'Defense'))}</span>
+        <input id="def" type="range" min="0" max="3000" step="10" value="400">
+        <output id="def-out" class="calc-value">400</output>
+      </label>
+      <label class="calc-row">
+        <span>${esc(t('combat.incoming'))}</span>
+        <input id="hit" type="range" min="50" max="5000" step="50" value="1000">
+        <output id="hit-out" class="calc-value">1 000</output>
+      </label>
+      <div class="calc-result">
+        <div><b id="negated">—</b><span>${esc(t('combat.negated'))}</span></div>
+        <div><b id="through">—</b><span>${esc(t('combat.through'))}</span></div>
+      </div>
+      <p class="calc-formula"><code id="def-formula"></code></p>
+    </section>
+
+    <div class="table-wrap"><table>
+      <thead><tr><th class="num">${esc(lb('stat', 'Defense'))}</th><th class="num">${esc(t('combat.negated'))}</th></tr></thead>
+      <tbody>${DEFENSE_SAMPLES.map((d) => `<tr><td class="num">${nf(d)}</td><td class="num">${pct(negatedShare(d, ref))}</td></tr>`).join('')}</tbody>
+    </table></div>
+
+    <ul class="status-effects combat-notes">
+      <li>${esc(t('combat.noteDiminishing'))}</li>
+      <li>${esc(t('combat.noteDot'))}</li>
+      ${c.damageScale && c.damageScale !== 1 ? `<li>${esc(t('combat.noteScale', { n: c.damageScale }))}</li>` : ''}
+      <li>${esc(t('combat.noteReduction', { stat: lb('stat', 'Damage Reduction') }))}</li>
+      ${c.elementStrong && c.elementWeak ? `<li>${esc(t('combat.noteElement', {
+    strong: pct(c.elementStrong - 1, 0), weak: pct(1 - c.elementWeak, 0), crit: pct(c.elementCritShift, 0),
+  }))}</li>` : ''}
+    </ul>
+
+    <h2>${esc(t('combat.resist'))}</h2>
+    <p class="empty-note">${esc(t('combat.resistNote', { floor: pct(c.resistFloor, 0) }))}</p>
+
+    <section class="panel calc">
+      <label class="calc-row">
+        <span>${esc(lb('stat', 'Resistance'))}</span>
+        <input id="res" type="range" min="0" max="100" step="1" value="30">
+        <output id="res-out" class="calc-value">30%</output>
+      </label>
+      <label class="calc-row">
+        <span>${esc(lb('stat', 'Accuracy'))}</span>
+        <input id="acc" type="range" min="0" max="100" step="1" value="10">
+        <output id="acc-out" class="calc-value">10%</output>
+      </label>
+      ${c.elementAccuracyShift ? `<div class="filter-group calc-row">
+        <span>${esc(t('combat.matchup'))}</span>
+        ${[['1', t('combat.matchupStrong')], ['0', t('combat.matchupNeutral')], ['-1', t('combat.matchupWeak')]]
+    .map(([v, label]) => `<button type="button" class="chip matchup" data-v="${v}"
+             aria-pressed="${v === '0'}">${esc(label)}</button>`).join('')}
+      </div>` : ''}
+      <div class="calc-result">
+        <div><b id="resisted">—</b><span>${esc(t('combat.resisted'))}</span></div>
+        <div><b id="lands">—</b><span>${esc(t('combat.lands'))}</span></div>
+      </div>
+      <p class="calc-formula"><code id="res-formula"></code></p>
+    </section>
+
+    <h3>${esc(t('combat.whatResists'))}</h3>
+    <ul class="status-effects combat-notes">
+      <li>${esc(t('combat.resistDebuffsOnly', { debuffs: lb('group', 'Debuff'), buffs: lb('group', 'Buff') }))}</li>
+      <li>${esc(t('combat.resistImmunity'))}</li>
+      <li>${esc(t('combat.resistMalediction'))}</li>
+      <li>${esc(t('combat.resistForced'))}</li>
+      ${c.statusSlots ? `<li>${esc(t('combat.resistSlots', { n: c.statusSlots }))}</li>` : ''}
+    </ul>
+  </div>`);
+
+  wireCombat(frag, c);
+  return frag;
+}
+
+/**
+ * Both calculators are plain range inputs recomputed on every move. No state
+ * outside the page: a reader can leave and come back without carrying anything.
+ *
+ * Every element is looked up once, up front. `route()` moves the fragment's
+ * children into the document, which leaves the fragment empty — so a handler that
+ * called `root.getElementById` later would find nothing and throw.
+ */
+function wireCombat(root, c) {
+  const el = {};
+  for (const id of ['def', 'hit', 'def-out', 'hit-out', 'negated', 'through', 'def-formula',
+    'res', 'acc', 'res-out', 'acc-out', 'resisted', 'lands', 'res-formula']) {
+    el[id] = root.getElementById(id);
+  }
+  const matchups = [...root.querySelectorAll('.matchup')];
+  const ref = c.defenseReference;
+
+  const refreshDefense = () => {
+    const d = Number(el.def.value);
+    const raw = Number(el.hit.value);
+    const share = negatedShare(d, ref);
+    el['def-out'].textContent = nf(d);
+    el['hit-out'].textContent = nf(raw);
+    el.negated.textContent = pct(share);
+    // The simulation floors an ordinary hit at 1, so the wiki does too.
+    el.through.textContent = nf(Math.max(1, Math.round(raw * (1 - share))));
+    // Ungrouped on purpose: "3.000" inside a formula reads as three wherever the
+    // locale groups with a dot.
+    el['def-formula'].textContent = `${ref} / (${ref} + ${d}) = ${pct(1 - share)}`;
+  };
+  el.def.addEventListener('input', refreshDefense);
+  el.hit.addEventListener('input', refreshDefense);
+  refreshDefense();
+
+  let matchup = 0;
+  const refreshResist = () => {
+    const r = Number(el.res.value) / 100;
+    const shift = matchup * (c.elementAccuracyShift ?? 0);
+    const a = Number(el.acc.value) / 100 + shift;
+    const share = resistShare(r, a, c.resistFloor);
+    el['res-out'].textContent = pct(r, 0);
+    el['acc-out'].textContent = pct(Number(el.acc.value) / 100, 0);
+    el.resisted.textContent = pct(share, 0);
+    el.lands.textContent = pct(1 - share, 0);
+    // An element penalty makes accuracy negative, which would print "− -5%".
+    const accuracyTerm = a < 0 ? `+ ${pct(-a, 0)}` : `− ${pct(a, 0)}`;
+    el['res-formula'].textContent = r - a < c.resistFloor
+      ? t('combat.resistFloored', { floor: pct(c.resistFloor, 0) })
+      : `${pct(r, 0)} ${accuracyTerm} = ${pct(share, 0)}`;
+  };
+  el.res.addEventListener('input', refreshResist);
+  el.acc.addEventListener('input', refreshResist);
+
+  for (const button of matchups) {
+    button.addEventListener('click', () => {
+      matchup = Number(button.dataset.v);
+      for (const other of matchups) other.setAttribute('aria-pressed', String(other === button));
+      refreshResist();
+    });
+  }
+  refreshResist();
+}
+
 /* --------------------------------------------------------------- skill tree */
 
 /** Shapes tell the node types apart at map scale, where a label would not fit. */
@@ -1584,6 +1748,7 @@ function route() {
       case 'talents': content = renderTalents(); break;
       case 'status': content = renderStatuses(params); break;
       case 'tree': content = renderTree(params); break;
+      case 'combat': content = renderCombat(); break;
       case 'modes': content = renderModes(); break;
       case 'mode': content = renderMode(key); break;
       case 'chapter': content = renderChapter(key, params); break;
@@ -1618,6 +1783,7 @@ function route() {
 const TITLE_OF = {
   items: 'items.title', monsters: 'monsters.title', loot: 'loot.title', recipes: 'recipes.title',
   sets: 'sets.title', buildings: 'buildings.title', talents: 'talents.title', status: 'status.title', tree: 'tree.title',
+  combat: 'combat.title',
   modes: 'modes.title',
 };
 

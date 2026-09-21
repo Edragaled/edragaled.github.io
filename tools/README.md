@@ -360,6 +360,42 @@ placeholder renders as a literal `{n}` on the page.
 Nothing else is translated: the marketing and legal pages at the repository root
 are English only. Terms and a privacy policy are not something to machine-translate.
 
+## The combat page publishes formulas, not numbers
+
+Two figures decide every fight, and both live in the simulation rather than in an
+asset, so `lib/combat.mjs` reads the constants out of the C# and the tuning knobs
+out of `CombatBalanceConfig`.
+
+**Mitigation.** `damage *= reference / (reference + defense)`. The yardstick is
+`Lerp(DefenseReference, attackerAttack, AttackWeight)`, and the asset currently
+sets `AttackWeight: 0`, so the yardstick is the fixed `DefenseReference` (400)
+and mitigation depends only on the defender. That is worth knowing before reading
+the page: at `AttackWeight: 1` it reverts to the historical
+`attack² / (attack + defense)`, where the same Defense is near-immunity against a
+weak attacker and worthless against a strong one — and the page then says so
+instead, through a different string.
+
+Only `DamageTypes.Default` goes through mitigation at all; burn, bleed and poison
+skip it. `DamageReduction` is separate and applies last, with a floor of 1 damage.
+
+**Resistance.** `resistChance = max(Resistance − Accuracy, 0.15)`. Only debuffs
+roll: buffs are never resisted, they are blocked by Malediction instead, and
+Immunity blocks debuffs before any roll. The 15% floor is why no debuff is ever
+guaranteed.
+
+The extractor checks the *shape* of both formulas, not just their constants — if
+`GetDamageReductionFactor` stops returning `reference / (reference + defense)`, or
+`Default` stops routing through it, the run warns. A page of confidently wrong
+arithmetic is worse than no page.
+
+### Calculators must capture their elements before rendering
+
+`route()` moves a fragment's children into the document, which leaves the fragment
+empty. A handler that calls `root.getElementById` *later* finds nothing and throws
+on the first slider move — which is exactly how the first version failed, silently,
+with the page looking fine. Look every element up once, while the fragment is still
+whole; the references stay valid after the move.
+
 ## The skill tree is rebuilt from 283 separate assets
 
 There is no tree asset. Every node is its own ScriptableObject holding its grants,

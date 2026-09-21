@@ -26,6 +26,7 @@ import { loadLanguages } from './lib/i18n.mjs';
 import { loadUiStrings } from './lib/ui-strings.mjs';
 import { readUpgradeScripts, effectsForLevel, fillUpgradeLine, PLAYER_UPGRADE_RARITIES, PLAYER_UPGRADE_CATEGORIES } from './lib/bastion.mjs';
 import { decodeLinkedIds, assignClasses, addPrerequisites, NODE_TYPES as SKILL_NODE_TYPES, GRANT_KINDS as SKILL_GRANT_KINDS } from './lib/skilltree.mjs';
+import { readCombatMath } from './lib/combat.mjs';
 import * as E from './lib/enums.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -1092,6 +1093,25 @@ function extractBuildings(guidIndex, en, itemsByGuid) {
   return buildings;
 }
 
+// ------------------------------------------------------------------- combat
+
+/**
+ * The damage and resist maths the page turns into sliders. Only the tuning
+ * knobs are authored; the rest are constants in the simulation, so lib/combat.mjs
+ * reads both and reports anything whose shape has changed.
+ */
+function extractCombatMath() {
+  const balanceFile = join(SO, 'SkillTree', 'CombatBalanceConfig.asset');
+  const balance = existsSync(balanceFile) ? readUnityYaml(balanceFile)[0]?.body : null;
+  if (!balance) warn('CombatBalanceConfig.asset not found — the damage figures fall back to the historical formula');
+
+  return readCombatMath({
+    stats: join(ASSETS, 'QuantumUser', 'Simulation', 'Partials', 'Stats.Partial.cs'),
+    status: join(ASSETS, 'QuantumUser', 'Simulation', 'Systems', 'Combat', 'StatusUtility.cs'),
+    statusQtn: join(ASSETS, 'QuantumUser', 'Simulation', 'QTN', 'Combat', 'StatusEffect.qtn'),
+  }, balance, warn);
+}
+
 // --------------------------------------------------------------- skill tree
 
 /**
@@ -2033,8 +2053,9 @@ function extractLocalized(L, structural) {
   const bastion = extractBastion(guidIndex, L, monsterLookup);
   if (bastion) gamemodes.push(bastion);
   const skilltree = extractSkillTree(guidIndex, quantumIndex, L, itemsByGuid);
+  const combat = extractCombatMath();
 
-  return { items, sets, tables, monsters, hidden, banners, recipes, statuses, talents, buildings, gamemodes, skilltree, itemsByGuid, fileByKey };
+  return { items, sets, tables, monsters, hidden, banners, recipes, statuses, talents, buildings, gamemodes, skilltree, combat, itemsByGuid, fileByKey };
 }
 
 /**
@@ -2183,6 +2204,7 @@ function main() {
       rarityColors: { item: E.ItemRarityColors, monster: E.MonsterRarityColors },
       elements: E.Elements,
       elementIcons,
+      combat: p.combat,
       hiddenBosses: p.hidden,
       unreferencedItems: [...unreferenced].sort(),
       // Deduped: the same asset problem is reported once per language pass.
