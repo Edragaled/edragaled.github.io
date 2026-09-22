@@ -101,6 +101,16 @@ const EXCLUDED_ITEM_CATEGORIES = new Set(['Accessory']);
 // Summon banners that are development scaffolding rather than live content.
 const EXCLUDED_SUMMON_CONFIGS = new Set(['TestEventSummonConfig']);
 
+/**
+ * Locations that are finished in the project but not released to players.
+ *
+ * Unlike the empty-waves rule, which excludes unreleased content by itself, this
+ * is a hand-kept list: a fully authored location is indistinguishable from a live
+ * one in the data. Every run warns about what it holds back, so the entry cannot
+ * be quietly forgotten once the content ships — delete the name and it appears.
+ */
+const UNRELEASED_LOCATIONS = new Set(['ForgottenDepths']);
+
 // Loot table folders left out. Tutorial props are scripted one-offs, not
 // something a player can go and farm.
 const EXCLUDED_LOOT_KINDS = new Set(['Tutorial']);
@@ -1689,6 +1699,10 @@ function extractTieredMode(guidIndex, en, monstersByKey, itemsByGuid, opts) {
     if (scriptGuid(doc) !== opts.script) continue;
     const b = doc.body;
     const id = b._friendlyId || basename(file, '.asset');
+    if (UNRELEASED_LOCATIONS.has(id)) {
+      warn(`${opts.nameKeyPrefix} ${id} is held back by UNRELEASED_LOCATIONS — remove it there when the content ships`);
+      continue;
+    }
 
     const levels = (b.Levels ?? [])
       .map((ref, index) => {
