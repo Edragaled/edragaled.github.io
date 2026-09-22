@@ -279,5 +279,7 @@
   "combat.resistImmunity": "免疫会在任何判定之前直接挡下减益，对特定效果的免疫同理。",
   "combat.resistMalediction": "诅咒则相反：它挡下增益，而增益从不受抗性影响。",
   "combat.resistForced": "少数效果被标记为强制，会完全跳过判定。",
-  "combat.resistSlots": "一名单位同时最多持有 {n} 个状态效果，超出后新效果无法附加。"
+  "combat.resistSlots": "一名单位同时最多持有 {n} 个状态效果，超出后新效果无法附加。",
+  "combat.curve": "防御抵消的伤害",
+  "combat.curveHint": "拖动滑块，或直接点击曲线上的任意位置。"
 }

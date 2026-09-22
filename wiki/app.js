@@ -977,13 +977,50 @@ function renderTalents() {
 
 /* ------------------------------------------------------------------- combat */
 
-const DEFENSE_SAMPLES = [0, 100, 200, 400, 800, 1600, 3000];
+const DEFENSE_MAX = 8000;
+const DEFENSE_SAMPLES = [0, 200, 400, 800, 1600, 3000, 5000, 8000];
+
+/** Chart geometry, in viewBox units. */
+const CURVE = { w: 1000, h: 300, left: 54, right: 16, top: 14, bottom: 28 };
+const curveX = (defense) => CURVE.left + (defense / DEFENSE_MAX) * (CURVE.w - CURVE.left - CURVE.right);
+const curveY = (share) => CURVE.h - CURVE.bottom - share * (CURVE.h - CURVE.top - CURVE.bottom);
 
 /** The share of an ordinary hit that Defense removes, straight from the sim. */
 const negatedShare = (defense, reference) => (reference + defense <= 0 ? 0 : defense / (reference + defense));
 
+/**
+ * The mitigation curve, drawn once. Its shape is the whole point: the climb is
+ * steep at first and never reaches the top, which a row of numbers hides.
+ */
+function defenseCurve(ref) {
+  const points = [];
+  for (let d = 0; d <= DEFENSE_MAX; d += DEFENSE_MAX / 200) {
+    points.push(`${d === 0 ? 'M' : 'L'}${curveX(d).toFixed(1)} ${curveY(negatedShare(d, ref)).toFixed(1)}`);
+  }
+
+  const grid = [0, 0.25, 0.5, 0.75, 1].map((share) => `
+    <line class="curve-grid" x1="${CURVE.left}" y1="${curveY(share)}" x2="${CURVE.w - CURVE.right}" y2="${curveY(share)}"/>
+    <text class="curve-label" x="${CURVE.left - 8}" y="${curveY(share) + 4}" text-anchor="end">${share * 100}%</text>`).join('');
+
+  const ticks = [0, 2000, 4000, 6000, 8000].map((d) => `
+    <text class="curve-label" x="${curveX(d)}" y="${CURVE.h - 8}" text-anchor="middle">${d / 1000 ? `${d / 1000}k` : '0'}</text>`).join('');
+
+  return `<svg class="curve" viewBox="0 0 ${CURVE.w} ${CURVE.h}" role="img" aria-label="${esc(t('combat.curve'))}">
+    ${grid}${ticks}
+    <path class="curve-line" d="${points.join(' ')}"/>
+    <line id="curve-drop" class="curve-guide" x1="0" y1="0" x2="0" y2="0"/>
+    <line id="curve-reach" class="curve-guide" x1="0" y1="0" x2="0" y2="0"/>
+    <circle id="curve-dot" class="curve-dot" cx="0" cy="0" r="8"/>
+  </svg>`;
+}
+
 /** `max(Resistance − Accuracy, floor)` — nothing is ever fully reliable. */
 const resistShare = (resistance, accuracy, floor) => Math.max(resistance - accuracy, floor);
+
+const setLine = (line, x1, y1, x2, y2) => {
+  line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+  line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+};
 
 const pct = (share, digits = 1) => `${(share * 100).toFixed(digits)}%`;
 
@@ -1005,7 +1042,7 @@ function renderCombat() {
     <section class="panel calc">
       <label class="calc-row">
         <span>${esc(lb('stat', 'Defense'))}</span>
-        <input id="def" type="range" min="0" max="3000" step="10" value="400">
+        <input id="def" type="range" min="0" max="${DEFENSE_MAX}" step="10" value="400">
         <output id="def-out" class="calc-value">400</output>
       </label>
       <label class="calc-row">
@@ -1013,6 +1050,8 @@ function renderCombat() {
         <input id="hit" type="range" min="50" max="5000" step="50" value="1000">
         <output id="hit-out" class="calc-value">1 000</output>
       </label>
+      <div class="curve-wrap">${defenseCurve(ref)}</div>
+      <p class="curve-hint">${esc(t('combat.curveHint'))}</p>
       <div class="calc-result">
         <div><b id="negated">—</b><span>${esc(t('combat.negated'))}</span></div>
         <div><b id="through">—</b><span>${esc(t('combat.through'))}</span></div>
@@ -1087,6 +1126,7 @@ function renderCombat() {
 function wireCombat(root, c) {
   const el = {};
   for (const id of ['def', 'hit', 'def-out', 'hit-out', 'negated', 'through', 'def-formula',
+    'curve-dot', 'curve-drop', 'curve-reach',
     'res', 'acc', 'res-out', 'acc-out', 'resisted', 'lands', 'res-formula']) {
     el[id] = root.getElementById(id);
   }
@@ -1105,9 +1145,39 @@ function wireCombat(root, c) {
     // Ungrouped on purpose: "3.000" inside a formula reads as three wherever the
     // locale groups with a dot.
     el['def-formula'].textContent = `${ref} / (${ref} + ${d}) = ${pct(1 - share)}`;
+
+    const x = curveX(d);
+    const y = curveY(share);
+    el['curve-dot'].setAttribute('cx', x);
+    el['curve-dot'].setAttribute('cy', y);
+    // Guides down to the axis and across to the scale, so the reading is exact
+    // without hunting along the curve.
+    setLine(el['curve-drop'], x, y, x, CURVE.h - CURVE.bottom);
+    setLine(el['curve-reach'], CURVE.left, y, x, y);
   };
   el.def.addEventListener('input', refreshDefense);
   el.hit.addEventListener('input', refreshDefense);
+
+  const chart = root.querySelector('.curve');
+  if (chart) {
+    // Pointing at the curve is quicker than dragging to a value, and dragging on
+    // it keeps working because the pointer is captured.
+    const pickFromChart = (event) => {
+      const box = chart.getBoundingClientRect();
+      const ratio = ((event.clientX - box.left) / box.width * CURVE.w - CURVE.left)
+        / (CURVE.w - CURVE.left - CURVE.right);
+      el.def.value = String(Math.round(Math.min(1, Math.max(0, ratio)) * DEFENSE_MAX));
+      refreshDefense();
+    };
+    chart.addEventListener('pointerdown', (event) => {
+      chart.setPointerCapture(event.pointerId);
+      pickFromChart(event);
+    });
+    chart.addEventListener('pointermove', (event) => {
+      if (chart.hasPointerCapture(event.pointerId)) pickFromChart(event);
+    });
+  }
+
   refreshDefense();
 
   let matchup = 0;

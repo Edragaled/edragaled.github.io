@@ -280,5 +280,7 @@
   "combat.resistImmunity": "Immunity blocks a debuff outright, before any roll — as does being immune to that specific effect.",
   "combat.resistMalediction": "Malediction is the mirror image: it blocks buffs, which Resistance never touches.",
   "combat.resistForced": "A few effects are marked forced and skip the roll entirely.",
-  "combat.resistSlots": "A fighter holds {n} status effects at once; past that, a new one cannot be applied."
+  "combat.resistSlots": "A fighter holds {n} status effects at once; past that, a new one cannot be applied.",
+  "combat.curve": "Damage negated by Defense",
+  "combat.curveHint": "Drag the slider or point anywhere on the curve."
 }

@@ -279,5 +279,7 @@
   "combat.resistImmunity": "Miễn nhiễm chặn thẳng debuff trước mọi lần quay — miễn nhiễm với riêng hiệu ứng đó cũng vậy.",
   "combat.resistMalediction": "Nguyền rủa là mặt đối xứng: nó chặn buff, thứ mà Kháng không bao giờ đụng tới.",
   "combat.resistForced": "Một vài hiệu ứng được đánh dấu cưỡng chế và bỏ qua hẳn lần quay.",
-  "combat.resistSlots": "Một đơn vị mang tối đa {n} hiệu ứng trạng thái cùng lúc; vượt quá thì không thêm được nữa."
+  "combat.resistSlots": "Một đơn vị mang tối đa {n} hiệu ứng trạng thái cùng lúc; vượt quá thì không thêm được nữa.",
+  "combat.curve": "Sát thương bị Phòng thủ chặn",
+  "combat.curveHint": "Kéo thanh trượt, hoặc bấm thẳng vào bất kỳ điểm nào trên đường cong."
 }

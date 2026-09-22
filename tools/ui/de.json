@@ -279,5 +279,7 @@
   "combat.resistImmunity": "Immunität blockt einen Debuff sofort, noch vor jedem Wurf — ebenso eine Immunität gegen genau diesen Effekt.",
   "combat.resistMalediction": "Verfluchung ist das Spiegelbild: sie blockt Buffs, die Resistenz nie berührt.",
   "combat.resistForced": "Einige Effekte sind als erzwungen markiert und überspringen den Wurf ganz.",
-  "combat.resistSlots": "Ein Kämpfer trägt {n} Statuseffekte gleichzeitig; darüber hinaus lässt sich kein neuer anwenden."
+  "combat.resistSlots": "Ein Kämpfer trägt {n} Statuseffekte gleichzeitig; darüber hinaus lässt sich kein neuer anwenden.",
+  "combat.curve": "Von der Verteidigung abgewehrter Schaden",
+  "combat.curveHint": "Zieh den Regler oder klick irgendwo auf die Kurve."
 }

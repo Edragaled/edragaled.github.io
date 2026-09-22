@@ -58,7 +58,10 @@ export function readCombatMath({ stats, status, statusQtn }, balance, onWarn = (
     damageScale: fpValue(balance?.DamageScale),
 
     // Constants, from the simulation.
-    elementStrong: constant(statsSource, /efficiency = Efficiency\.Strong;\s*elementMultiplier = (FP\._[\d_]+);/, 'the super-effective multiplier', onWarn),
+    // Two shapes in the wild: the multiplier assigned inline, or returned from a
+    // helper that holds the strong-hit numbers. The bounded gap keeps the match
+    // from wandering into the weak branch below.
+    elementStrong: constant(statsSource, /efficiency = Efficiency\.Strong;[\s\S]{0,240}?(?:elementMultiplier = |return )(FP\._[\d_]+);/, 'the super-effective multiplier', onWarn),
     elementWeak: constant(statsSource, /efficiency = Efficiency\.Weak;\s*elementMultiplier = (FP\._[\d_]+);/, 'the not-very-effective multiplier', onWarn),
     elementCritShift: constant(statsSource, /efficiency = Efficiency\.Strong;[\s\S]*?critChance \+= ([^;]+);/, 'the element crit shift', onWarn),
     elementAccuracyShift: constant(statusSource, /IsStrongTo\(defendingElement\.Element\)\)\s*accuracy \+= ([^;]+);/, 'the element accuracy shift', onWarn),

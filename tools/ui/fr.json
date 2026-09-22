@@ -279,5 +279,7 @@
   "combat.resistImmunity": "L’Immunité bloque un malus d’emblée, avant tout jet — tout comme une immunité à cet effet précis.",
   "combat.resistMalediction": "La Malédiction est le miroir : elle bloque les bonus, que la Résistance ne touche jamais.",
   "combat.resistForced": "Quelques effets sont marqués comme forcés et sautent complètement le jet.",
-  "combat.resistSlots": "Un combattant porte {n} effets d’état à la fois ; au-delà, un nouvel effet ne peut pas s’appliquer."
+  "combat.resistSlots": "Un combattant porte {n} effets d’état à la fois ; au-delà, un nouvel effet ne peut pas s’appliquer.",
+  "combat.curve": "Dégâts annulés par la Défense",
+  "combat.curveHint": "Fais glisser le curseur, ou clique directement sur la courbe."
 }

@@ -609,6 +609,29 @@ td .with-icon > .sprite { height: 22px; max-width: 22px; flex: none; }
   color: var(--text);
 }
 
+.curve-wrap { margin: 4px 0 6px; }
+
+.curve {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Pointing at the curve sets the slider, so the whole plot is a control. */
+  cursor: crosshair;
+  touch-action: none;
+}
+.curve-grid { stroke: var(--line-soft); stroke-width: 1.5; }
+.curve-label { fill: var(--text-faint); font: 11px var(--mono); }
+.curve-line { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; }
+.curve-guide { stroke: var(--text-faint); stroke-width: 2; stroke-dasharray: 5 5; }
+.curve-dot { fill: var(--accent); stroke: var(--bg-raised); stroke-width: 3; }
+
+.curve-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
 .calc-result {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));

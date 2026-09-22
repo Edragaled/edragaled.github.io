@@ -279,5 +279,7 @@
   "combat.resistImmunity": "면역은 굴림 이전에 디버프를 그대로 차단합니다. 특정 효과에 대한 면역도 마찬가지입니다.",
   "combat.resistMalediction": "저주는 그 거울상으로, 저항이 관여하지 않는 버프 쪽을 막습니다.",
   "combat.resistForced": "일부 효과는 강제로 표시되어 굴림 자체를 건너뜁니다.",
-  "combat.resistSlots": "한 캐릭터는 상태 효과를 동시에 {n}개까지 지니며, 그 이상은 새로 걸리지 않습니다."
+  "combat.resistSlots": "한 캐릭터는 상태 효과를 동시에 {n}개까지 지니며, 그 이상은 새로 걸리지 않습니다.",
+  "combat.curve": "방어력으로 경감되는 피해",
+  "combat.curveHint": "슬라이더를 움직이거나 곡선 위를 바로 클릭하세요."
 }

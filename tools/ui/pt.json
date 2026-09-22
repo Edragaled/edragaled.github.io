@@ -279,5 +279,7 @@
   "combat.resistImmunity": "A Imunidade bloqueia um debuff à partida, antes de qualquer rolagem — tal como a imunidade àquele efeito específico.",
   "combat.resistMalediction": "A Maldição é o espelho: bloqueia os buffs, que a Resistência nunca afeta.",
   "combat.resistForced": "Alguns efeitos são marcados como forçados e saltam a rolagem por completo.",
-  "combat.resistSlots": "Um lutador mantém {n} efeitos de estado ao mesmo tempo; para além disso, um novo não pode ser aplicado."
+  "combat.resistSlots": "Um lutador mantém {n} efeitos de estado ao mesmo tempo; para além disso, um novo não pode ser aplicado.",
+  "combat.curve": "Dano anulado pela Defesa",
+  "combat.curveHint": "Arrasta o cursor ou clica em qualquer ponto da curva."
 }
