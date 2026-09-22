@@ -281,5 +281,6 @@
   "combat.resistForced": "Einige Effekte sind als erzwungen markiert und überspringen den Wurf ganz.",
   "combat.resistSlots": "Ein Kämpfer trägt {n} Statuseffekte gleichzeitig; darüber hinaus lässt sich kein neuer anwenden.",
   "combat.curve": "Von der Verteidigung abgewehrter Schaden",
-  "combat.curveHint": "Zieh den Regler oder klick irgendwo auf die Kurve."
+  "combat.curveHint": "Zieh den Regler oder klick irgendwo auf die Kurve.",
+  "combat.accuracyIsBonus": "Genauigkeit ist ein Bonus und beginnt bei null, also ist reine Resistenz die Widerstandsrate: 64% Resistenz gegen einen Angreifer ohne Genauigkeit widersteht in 64% der Fälle. Jeder Punkt Genauigkeit hebt einen Punkt Resistenz auf."
 }

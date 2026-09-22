@@ -281,5 +281,6 @@
   "combat.resistForced": "少数效果被标记为强制，会完全跳过判定。",
   "combat.resistSlots": "一名单位同时最多持有 {n} 个状态效果，超出后新效果无法附加。",
   "combat.curve": "防御抵消的伤害",
-  "combat.curveHint": "拖动滑块，或直接点击曲线上的任意位置。"
+  "combat.curveHint": "拖动滑块，或直接点击曲线上的任意位置。",
+  "combat.accuracyIsBonus": "命中是从零开始的加成，因此抗性数值本身就是抵抗率：面对命中为 0 的攻击者，64% 抗性就有 64% 的概率抵抗。每 1 点命中抵消 1 点抗性。"
 }

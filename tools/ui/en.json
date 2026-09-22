@@ -282,5 +282,6 @@
   "combat.resistForced": "A few effects are marked forced and skip the roll entirely.",
   "combat.resistSlots": "A fighter holds {n} status effects at once; past that, a new one cannot be applied.",
   "combat.curve": "Damage negated by Defense",
-  "combat.curveHint": "Drag the slider or point anywhere on the curve."
+  "combat.curveHint": "Drag the slider or point anywhere on the curve.",
+  "combat.accuracyIsBonus": "Accuracy is a bonus and starts at zero, so plain Resistance is the resist rate: 64% Resistance against an attacker with no Accuracy is resisted 64% of the time. Every point of Accuracy cancels one point of Resistance."
 }

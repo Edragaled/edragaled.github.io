@@ -281,5 +281,6 @@
   "combat.resistForced": "Alguns efeitos são marcados como forçados e saltam a rolagem por completo.",
   "combat.resistSlots": "Um lutador mantém {n} efeitos de estado ao mesmo tempo; para além disso, um novo não pode ser aplicado.",
   "combat.curve": "Dano anulado pela Defesa",
-  "combat.curveHint": "Arrasta o cursor ou clica em qualquer ponto da curva."
+  "combat.curveHint": "Arrasta o cursor ou clica em qualquer ponto da curva.",
+  "combat.accuracyIsBonus": "A Precisão é um bónus e começa em zero, por isso a Resistência sozinha é a taxa de resistência: 64% de Resistência contra um atacante sem Precisão resiste 64% das vezes. Cada ponto de Precisão anula um de Resistência."
 }

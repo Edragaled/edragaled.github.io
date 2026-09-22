@@ -281,5 +281,6 @@
   "combat.resistForced": "Một vài hiệu ứng được đánh dấu cưỡng chế và bỏ qua hẳn lần quay.",
   "combat.resistSlots": "Một đơn vị mang tối đa {n} hiệu ứng trạng thái cùng lúc; vượt quá thì không thêm được nữa.",
   "combat.curve": "Sát thương bị Phòng thủ chặn",
-  "combat.curveHint": "Kéo thanh trượt, hoặc bấm thẳng vào bất kỳ điểm nào trên đường cong."
+  "combat.curveHint": "Kéo thanh trượt, hoặc bấm thẳng vào bất kỳ điểm nào trên đường cong.",
+  "combat.accuracyIsBonus": "Chính xác là chỉ số cộng thêm và bắt đầu từ 0, nên riêng Kháng đã là tỉ lệ kháng: Kháng 64% trước kẻ không có Chính xác sẽ kháng 64% số lần. Mỗi điểm Chính xác triệt tiêu một điểm Kháng."
 }

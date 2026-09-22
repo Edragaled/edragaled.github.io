@@ -281,5 +281,6 @@
   "combat.resistForced": "Quelques effets sont marqués comme forcés et sautent complètement le jet.",
   "combat.resistSlots": "Un combattant porte {n} effets d’état à la fois ; au-delà, un nouvel effet ne peut pas s’appliquer.",
   "combat.curve": "Dégâts annulés par la Défense",
-  "combat.curveHint": "Fais glisser le curseur, ou clique directement sur la courbe."
+  "combat.curveHint": "Fais glisser le curseur, ou clique directement sur la courbe.",
+  "combat.accuracyIsBonus": "La Précision est un bonus et part de zéro : la Résistance seule est donc le taux de résistance. 64 % de Résistance face à un attaquant sans Précision, c’est 64 % de résistance. Chaque point de Précision annule un point de Résistance."
 }

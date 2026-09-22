@@ -1076,6 +1076,7 @@ function renderCombat() {
 
     <h2>${esc(t('combat.resist'))}</h2>
     <p class="empty-note">${esc(t('combat.resistNote', { floor: pct(c.resistFloor, 0) }))}</p>
+    <p class="empty-note">${esc(t('combat.accuracyIsBonus'))}</p>
 
     <section class="panel calc">
       <label class="calc-row">
@@ -1085,8 +1086,8 @@ function renderCombat() {
       </label>
       <label class="calc-row">
         <span>${esc(lb('stat', 'Accuracy'))}</span>
-        <input id="acc" type="range" min="0" max="100" step="1" value="10">
-        <output id="acc-out" class="calc-value">10%</output>
+        <input id="acc" type="range" min="0" max="100" step="1" value="0">
+        <output id="acc-out" class="calc-value">0%</output>
       </label>
       ${c.elementAccuracyShift ? `<div class="filter-group calc-row">
         <span>${esc(t('combat.matchup'))}</span>
