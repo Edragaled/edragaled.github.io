@@ -18,6 +18,7 @@ PixelChronicles website/       ← this repo IS the website; push it and it depl
   CNAME                          www.moonforge-games.com — do not edit
   ads.txt                        AdMob publisher verification — do not edit
   app-ads.txt                    AdMob publisher verification — do not edit
+  google4c29c4….html             Search Console verification — do not edit or rename
   .nojekyll                      stops GitHub from running Jekyll over the files
   assets/                        logo, hero art, studio mark (generated)
   wiki/                          the wiki app
@@ -37,9 +38,12 @@ PixelChronicles website/       ← this repo IS the website; push it and it depl
 The marketing pages and the wiki share one palette and type scale, so the site
 reads as a single thing even though `/wiki/` is a separate app.
 
-`CNAME`, `ads.txt` and `app-ads.txt` are carried over byte-identical. The two
-ads files are how AdMob verifies the publisher account — changing or losing them
-breaks ad serving, so they must sit at the domain root.
+`CNAME`, `ads.txt`, `app-ads.txt` and the `google….html` file are carried over
+byte-identical. The two ads files are how AdMob verifies the publisher account,
+and the Google one is how Search Console verifies the domain — Google fetches it
+at the root by its exact filename and compares the contents literally, so it must
+not be renamed, reformatted or wrapped in HTML. Changing or losing any of them
+breaks the thing it proves, so they all sit at the domain root.
 
 ## Where the Unity project has to be
 
