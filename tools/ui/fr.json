@@ -125,7 +125,7 @@
   "sets.title": "Ensembles d'objets",
   "sets.subtitle": "{n} ensembles. Porter toutes les pièces accorde le bonus indiqué.",
   "buildings.title": "Bâtiments",
-  "buildings.subtitle": "{n} bâtiments achetables. Ceux qui commencent en ruines sur ton île et se réparent au lieu de s'acheter ne sont pas listés.",
+  "buildings.subtitle": "{n} bâtiments. Ceux qui commencent en ruines sur ton île se réparent au lieu de s’acheter ; tous les autres s’achètent directement.",
   "building.buy": "Achat",
   "building.buildTime": "Durée de construction",
   "building.maxLevel": "Niveau max",
@@ -299,5 +299,7 @@
   "vocab.workType.Lumberjack": "Bûcheron",
   "vocab.workType.Builder": "Bâtisseur",
   "vocab.workType.None": "—",
-  "building.speedAtLevelBase": "Au niveau {level}, le bâtiment travaille à sa vitesse de base. Les durées ci-dessous sont les vraies à ce niveau."
+  "building.speedAtLevelBase": "Au niveau {level}, le bâtiment travaille à sa vitesse de base. Les durées ci-dessous sont les vraies à ce niveau.",
+  "building.repair": "Réparation",
+  "building.ruin": "Commence en ruines"
 }

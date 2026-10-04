@@ -1174,7 +1174,7 @@ function extractBuildings(guidIndex, en, itemsByGuid, recipes) {
       buildSeconds: num(c.Hours) * 3600 + num(c.Minutes) * 60 + num(c.Seconds),
     }));
 
-    if (b.StartsAtLevelZero || !costs.length) continue;
+    if (!costs.length) continue;
 
     const key = b._friendlyId || basename(file, '.asset');
     buildings.push({
@@ -1187,6 +1187,9 @@ function extractBuildings(guidIndex, en, itemsByGuid, recipes) {
       purchase: costs[0],
       upgrades: costs.slice(1),
       unlimited: !!b.UnlimitedBuildAmount,
+      // A ruin is repaired into level 1 rather than bought, so its first cost is
+      // not a purchase price and must not be labelled as one.
+      startsAsRuin: !!b.StartsAtLevelZero,
       icon: queueIcon((b.BuildingIcons ?? [])[0], guidIndex, 'buildings', key),
       effect: buildingEffect(key, costs.length, recipes),
       production: buildingProduction(file, b, guidIndex, itemsByGuid),

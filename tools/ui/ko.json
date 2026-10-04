@@ -125,7 +125,7 @@
   "sets.title": "아이템 세트",
   "sets.subtitle": "세트 {n}개. 모든 부위를 착용하면 표시된 보너스를 얻습니다.",
   "buildings.title": "건물",
-  "buildings.subtitle": "구매할 수 있는 건물 {n}개. 섬에서 폐허로 시작해 구매가 아니라 수리로 얻는 건물은 제외했습니다.",
+  "buildings.subtitle": "건물 {n}개. 섬에 폐허로 놓인 건물은 구매가 아니라 수리하고, 나머지는 바로 구매합니다.",
   "building.buy": "구매",
   "building.buildTime": "건설 시간",
   "building.maxLevel": "최대 레벨",
@@ -299,5 +299,7 @@
   "vocab.workType.Lumberjack": "나무꾼",
   "vocab.workType.Builder": "건축가",
   "vocab.workType.None": "—",
-  "building.speedAtLevelBase": "{level}레벨에서는 기본 속도로 작동합니다. 아래 시간은 해당 레벨의 실제 값입니다."
+  "building.speedAtLevelBase": "{level}레벨에서는 기본 속도로 작동합니다. 아래 시간은 해당 레벨의 실제 값입니다.",
+  "building.repair": "수리",
+  "building.ruin": "폐허에서 시작"
 }

@@ -913,7 +913,7 @@ function renderBuildings(params) {
       ${chipGroup(t('filter.category'), 'category', categories, category, labelsFor('buildingCategory', categories))}
       <span class="count">${esc(t('filter.shown', { n: nf(rows.length) }))}</span>
     </div>
-    <div class="panels" id="list"></div>
+    <div class="building-list" id="list"></div>
   </div>`);
 
   frag.getElementById('list').append(...rows.map((b) => {
@@ -924,12 +924,12 @@ function renderBuildings(params) {
         <span class="thumb" style="width:44px;height:44px;flex:none">${iconImg(b.icon, b.name)}</span>
         <span>
           <span class="skill-name" style="font-size:16px">${esc(b.name)}</span>
-          <span class="skill-kind">${esc(lb('buildingCategory', b.category))}</span>
+          <span class="skill-kind">${esc(lb('buildingCategory', b.category))}</span>${b.startsAsRuin ? `<span class="skill-kind">${esc(t('building.ruin'))}</span>` : ''}
         </span>
       </div>
       ${b.description ? `<p style="margin:0 0 12px;font-size:13px;color:var(--text-dim)">${esc(plain(b.description))}</p>` : ''}
       <dl class="stats">
-        <div><dt>${esc(t('building.buy'))}</dt><dd>${costText(b.purchase)}</dd></div>
+        <div><dt>${esc(t(b.startsAsRuin ? 'building.repair' : 'building.buy'))}</dt><dd>${costText(b.purchase)}</dd></div>
         ${b.purchase.buildSeconds ? `<div><dt>${esc(t('building.buildTime'))}</dt><dd>${esc(duration(b.purchase.buildSeconds))}</dd></div>` : ''}
         <div><dt>${esc(t('building.maxLevel'))}</dt><dd>${nf(b.maxLevel)}</dd></div>
         ${firstEffect == null ? '' : `<div><dt>${esc(t('building.atLevelOne'))}</dt><dd>${esc(effectText(b.effect.kind, firstEffect))}</dd></div>`}

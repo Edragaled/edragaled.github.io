@@ -126,7 +126,7 @@
   "sets.title": "Item sets",
   "sets.subtitle": "{n} sets. Wearing every piece grants the listed bonus.",
   "buildings.title": "Buildings",
-  "buildings.subtitle": "{n} buildings you can buy. The ones that start as ruins on your island and are repaired rather than purchased are left out.",
+  "buildings.subtitle": "{n} buildings. The ones that start as ruins on your island are repaired instead of bought; everything else is purchased outright.",
   "building.buy": "Buy",
   "building.buildTime": "Build time",
   "building.maxLevel": "Max level",
@@ -300,5 +300,7 @@
   "vocab.workType.Lumberjack": "Lumberjack",
   "vocab.workType.Builder": "Builder",
   "vocab.workType.None": "—",
-  "building.speedAtLevelBase": "At level {level} the building works at its base speed. Times below are the real ones at that level."
+  "building.speedAtLevelBase": "At level {level} the building works at its base speed. Times below are the real ones at that level.",
+  "building.repair": "Repair",
+  "building.ruin": "Starts as a ruin"
 }

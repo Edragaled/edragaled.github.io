@@ -125,7 +125,7 @@
   "sets.title": "Gegenstands-Sets",
   "sets.subtitle": "{n} Sets. Wer alle Teile trägt, erhält den angegebenen Bonus.",
   "buildings.title": "Gebäude",
-  "buildings.subtitle": "{n} kaufbare Gebäude. Die, die als Ruine auf deiner Insel beginnen und repariert statt gekauft werden, fehlen hier.",
+  "buildings.subtitle": "{n} Gebäude. Die, die als Ruine auf deiner Insel beginnen, werden repariert statt gekauft; alle anderen kauft man direkt.",
   "building.buy": "Kauf",
   "building.buildTime": "Bauzeit",
   "building.maxLevel": "Max. Stufe",
@@ -299,5 +299,7 @@
   "vocab.workType.Lumberjack": "Holzfäller",
   "vocab.workType.Builder": "Baumeister",
   "vocab.workType.None": "—",
-  "building.speedAtLevelBase": "Auf Stufe {level} arbeitet das Gebäude mit Grundgeschwindigkeit. Die Zeiten unten gelten genau für diese Stufe."
+  "building.speedAtLevelBase": "Auf Stufe {level} arbeitet das Gebäude mit Grundgeschwindigkeit. Die Zeiten unten gelten genau für diese Stufe.",
+  "building.repair": "Reparatur",
+  "building.ruin": "Beginnt als Ruine"
 }

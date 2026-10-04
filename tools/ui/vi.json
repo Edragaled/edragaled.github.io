@@ -125,7 +125,7 @@
   "sets.title": "Bộ trang bị",
   "sets.subtitle": "{n} bộ. Mang đủ mọi phần sẽ nhận được thưởng bộ được ghi.",
   "buildings.title": "Công trình",
-  "buildings.subtitle": "{n} công trình có thể mua. Những công trình bắt đầu là phế tích trên đảo và phải sửa chữa thay vì mua thì không được liệt kê.",
+  "buildings.subtitle": "{n} công trình. Những công trình khởi đầu là phế tích trên đảo thì sửa chữa thay vì mua; phần còn lại mua thẳng.",
   "building.buy": "Mua",
   "building.buildTime": "Thời gian xây",
   "building.maxLevel": "Cấp tối đa",
@@ -299,5 +299,7 @@
   "vocab.workType.Lumberjack": "Tiều phu",
   "vocab.workType.Builder": "Thợ xây",
   "vocab.workType.None": "—",
-  "building.speedAtLevelBase": "Ở cấp {level}, công trình chạy ở tốc độ gốc. Thời gian bên dưới là giá trị thật ở cấp đó."
+  "building.speedAtLevelBase": "Ở cấp {level}, công trình chạy ở tốc độ gốc. Thời gian bên dưới là giá trị thật ở cấp đó.",
+  "building.repair": "Sửa chữa",
+  "building.ruin": "Khởi đầu là phế tích"
 }

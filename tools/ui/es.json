@@ -125,7 +125,7 @@
   "sets.title": "Conjuntos de objetos",
   "sets.subtitle": "{n} conjuntos. Llevar todas las piezas otorga el bono indicado.",
   "buildings.title": "Edificios",
-  "buildings.subtitle": "{n} edificios que puedes comprar. Los que empiezan en ruinas en tu isla y se reparan en vez de comprarse no se incluyen.",
+  "buildings.subtitle": "{n} edificios. Los que empiezan en ruinas en tu isla se reparan en vez de comprarse; el resto se compra directamente.",
   "building.buy": "Compra",
   "building.buildTime": "Tiempo de construcción",
   "building.maxLevel": "Nivel máx.",
@@ -299,5 +299,7 @@
   "vocab.workType.Lumberjack": "Leñador",
   "vocab.workType.Builder": "Constructor",
   "vocab.workType.None": "—",
-  "building.speedAtLevelBase": "En el nivel {level} el edificio trabaja a su velocidad base. Los tiempos de abajo son los reales en ese nivel."
+  "building.speedAtLevelBase": "En el nivel {level} el edificio trabaja a su velocidad base. Los tiempos de abajo son los reales en ese nivel.",
+  "building.repair": "Reparación",
+  "building.ruin": "Empieza en ruinas"
 }

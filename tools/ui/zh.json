@@ -125,7 +125,7 @@
   "sets.title": "物品套装",
   "sets.subtitle": "{n} 套。集齐全部部件即可获得所列加成。",
   "buildings.title": "建筑",
-  "buildings.subtitle": "{n} 座可购买的建筑。那些在岛上以废墟开始、只能修复而非购买的建筑不在此列。",
+  "buildings.subtitle": "{n} 座建筑。在岛上以废墟开始的需要修复而非购买，其余都可直接购买。",
   "building.buy": "购买",
   "building.buildTime": "建造时间",
   "building.maxLevel": "最高等级",
@@ -299,5 +299,7 @@
   "vocab.workType.Lumberjack": "伐木工",
   "vocab.workType.Builder": "建筑工",
   "vocab.workType.None": "—",
-  "building.speedAtLevelBase": "{level} 级时建筑以基础速度生产。下方时间就是该等级的实际耗时。"
+  "building.speedAtLevelBase": "{level} 级时建筑以基础速度生产。下方时间就是该等级的实际耗时。",
+  "building.repair": "修复",
+  "building.ruin": "初始为废墟"
 }

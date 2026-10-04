@@ -396,13 +396,14 @@ the real ones at that level rather than the authored base.
 the skill tree's `_linkedNodesIds`, so it goes through `intArray`/`rawField` in
 `lib/unity-yaml.mjs` and is never taken from the parsed document.
 
-### Only purchasable buildings are listed
+### Ruins are listed too, labelled differently
 
 `StartsAtLevelZero` buildings — Workshop, Monster Altar, Portal, Shop — begin as
-ruins on the island and are repaired rather than bought, and the page has left them
-out since it was first asked for. That also hides their upgrade effects, Workshop's
-recipe unlocks in particular. Dropping the `StartsAtLevelZero` filter would show
-them; it is a deliberate omission, not an oversight.
+ruins on the island. They were left out while the page only covered what you could
+buy; now that it also covers upgrade effects they belong there, with their first
+cost labelled a repair rather than a purchase, because that is what it is.
+
+Workshop's levels unlock 15 to 46 recipes, which was invisible while it was hidden.
 
 ## The combat page publishes formulas, not numbers
 

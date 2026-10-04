@@ -125,7 +125,7 @@
   "sets.title": "アイテムセット",
   "sets.subtitle": "{n} 個のセット。すべての部位を装備すると記載のボーナスが付きます。",
   "buildings.title": "建物",
-  "buildings.subtitle": "購入できる建物 {n} 件。島で廃墟として始まり、購入ではなく修理する建物は含みません。",
+  "buildings.subtitle": "建物は {n} 件。島に廃墟として置かれているものは購入ではなく修復し、それ以外は直接購入します。",
   "building.buy": "購入",
   "building.buildTime": "建設時間",
   "building.maxLevel": "最大レベル",
@@ -299,5 +299,7 @@
   "vocab.workType.Lumberjack": "伐採",
   "vocab.workType.Builder": "建築",
   "vocab.workType.None": "—",
-  "building.speedAtLevelBase": "レベル {level} では生産速度は基本値のままです。下の時間はそのレベルでの実際の値です。"
+  "building.speedAtLevelBase": "レベル {level} では生産速度は基本値のままです。下の時間はそのレベルでの実際の値です。",
+  "building.repair": "修復",
+  "building.ruin": "廃墟から始まる"
 }

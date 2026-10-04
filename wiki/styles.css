@@ -584,6 +584,10 @@ td .with-icon > .sprite { height: 22px; max-width: 22px; flex: none; }
 /* One effect per line: a rank often grants two or three at once. */
 .upgrade-levels span { display: block; }
 
+/* One building per row: each panel carries a cost table and often a production
+   table too, which a multi-column grid squeezes into unreadable columns. */
+.building-list { display: flex; flex-direction: column; gap: 14px; }
+
 /* A produced item the building is still too low to make. */
 tr.locked { opacity: .5; }
 .locked-note { font-size: 12px; color: var(--text-faint); }
