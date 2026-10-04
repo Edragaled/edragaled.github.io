@@ -282,5 +282,22 @@
   "combat.resistSlots": "Un combattant porte {n} effets d’état à la fois ; au-delà, un nouvel effet ne peut pas s’appliquer.",
   "combat.curve": "Dégâts annulés par la Défense",
   "combat.curveHint": "Fais glisser le curseur, ou clique directement sur la courbe.",
-  "combat.accuracyIsBonus": "La Précision est un bonus et part de zéro : la Résistance seule est donc le taux de résistance. 64 % de Résistance face à un attaquant sans Précision, c’est 64 % de résistance. Chaque point de Précision annule un point de Résistance."
+  "combat.accuracyIsBonus": "La Précision est un bonus et part de zéro : la Résistance seule est donc le taux de résistance. 64 % de Résistance face à un attaquant sans Précision, c’est 64 % de résistance. Chaque point de Précision annule un point de Résistance.",
+  "building.atLevelOne": "Au niveau 1",
+  "building.effect.storagePages": "{n} pages de stockage",
+  "building.effect.forgeLevel": "Améliore l’équipement jusqu’au niveau {n}",
+  "building.effect.teamSlots": "{n} monstres dans l’équipe",
+  "building.effect.builders": "{n} nains au travail",
+  "building.effect.recipes": "{n} recettes disponibles",
+  "building.production": "Production — {work}",
+  "building.speedAtLevel": "Au niveau {level}, le bâtiment travaille {n} % plus vite. Les durées ci-dessous sont les vraies à ce niveau.",
+  "building.perUnit": "À l’unité",
+  "building.queue": "File max",
+  "building.full": "File pleine",
+  "building.fromLevel": "Dès le niveau {n}",
+  "vocab.workType.Miner": "Mineur",
+  "vocab.workType.Lumberjack": "Bûcheron",
+  "vocab.workType.Builder": "Bâtisseur",
+  "vocab.workType.None": "—",
+  "building.speedAtLevelBase": "Au niveau {level}, le bâtiment travaille à sa vitesse de base. Les durées ci-dessous sont les vraies à ce niveau."
 }

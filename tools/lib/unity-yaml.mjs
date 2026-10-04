@@ -348,6 +348,36 @@ export function readUnityYaml(path) {
   return parseUnityYaml(readFileSync(path, 'utf8'));
 }
 
+/**
+ * Unity writes a serialized `List<int>` / `int[]` as one hex byte string:
+ * `0a0000000f000000` is 10 then 15, little-endian.
+ *
+ * It has to be read from the raw text, never from a parsed document: many of
+ * these strings are also valid numbers and some parse as scientific notation, so
+ * the value silently becomes a float before anyone can decode it.
+ */
+export function intArray(hex, onWarn = () => {}, label = 'int array') {
+  const text = String(hex ?? '').trim();
+  if (!text) return [];
+  if (!/^[0-9a-fA-F]+$/.test(text) || text.length % 8 !== 0) {
+    onWarn(`${label} is not a whole number of int32s — dropped`);
+    return [];
+  }
+
+  const out = [];
+  for (let i = 0; i < text.length; i += 8) {
+    out.push(parseInt(text.slice(i, i + 8).match(/../g).reverse().join(''), 16));
+  }
+  return out;
+}
+
+/** The raw text of one scalar line, for the fields `intArray` has to decode. */
+export function rawField(file, field) {
+  const pattern = new RegExp('^\\s*' + field + ':\\s*(\\S*)\\s*$', 'm');
+  const line = pattern.exec(readFileSync(file, 'utf8'));
+  return line ? line[1] : null;
+}
+
 /** Unity serializes Photon Quantum FP fixed-point numbers as RawValue/65536. */
 export function fp(node) {
   if (node == null) return 0;

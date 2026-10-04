@@ -364,6 +364,46 @@ placeholder renders as a literal `{n}` on the page.
 Nothing else is translated: the marketing and legal pages at the repository root
 are English only. Terms and a privacy policy are not something to machine-translate.
 
+## What a building level is worth is not authored anywhere
+
+The building assets hold the *price* of each level and nothing about its effect.
+Every effect is a one-line C# getter on that building's listener:
+
+| Building | Source | Effect |
+| --- | --- | --- |
+| Warehouse | `GetStoragePagesUnlocked` | `level` storage pages |
+| Forge | `GetMaxItemLevelUnlocked` | gear up to `level * 3` |
+| Monster Altar | `GetMonsterTeamCapacity` | `level` team slots |
+| Dwarf Hut | `MaxAvailableDwarves = building.Level` | `level` builders |
+
+Those formulas are reproduced in `extract.mjs`, and the source is checked for the
+shape each one was read from. Rewrite a getter and the run warns and drops the
+column, rather than publishing a curve that quietly stopped being true.
+
+The two workshops are different: their levels unlock recipes, and the recipe data
+already says which station level each recipe needs, so that effect is counted from
+the data instead of hardcoded.
+
+### Production times are computed, not stored
+
+`ProductionBuildingData` holds a base time per item and a speed bonus per level,
+and the game divides one by the other:
+`round(ProductionTime / (1 + ProductionSpeedLevels[level - 1] / 100))`. The site
+does the same arithmetic as the reader moves the level picker, so the numbers are
+the real ones at that level rather than the authored base.
+
+`ProductionSpeedLevels` is **another hex int array**, the same Unity encoding as
+the skill tree's `_linkedNodesIds`, so it goes through `intArray`/`rawField` in
+`lib/unity-yaml.mjs` and is never taken from the parsed document.
+
+### Only purchasable buildings are listed
+
+`StartsAtLevelZero` buildings — Workshop, Monster Altar, Portal, Shop — begin as
+ruins on the island and are repaired rather than bought, and the page has left them
+out since it was first asked for. That also hides their upgrade effects, Workshop's
+recipe unlocks in particular. Dropping the `StartsAtLevelZero` filter would show
+them; it is a deliberate omission, not an oversight.
+
 ## The combat page publishes formulas, not numbers
 
 Two figures decide every fight, and both live in the simulation rather than in an

@@ -9,8 +9,9 @@
 // read from the raw text and never from the parsed document. And only class hubs
 // declare a class: every other node inherits it by walking the links.
 
-import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
+
+import { intArray, rawField } from './unity-yaml.mjs';
 
 export const NODE_TYPES = {
   0: 'ClassHub', 2: 'Minor', 3: 'Notable', 4: 'ActiveSkill', 5: 'Capstone', 6: 'Passive', 7: 'Root',
@@ -23,22 +24,7 @@ export const GRANT_KINDS = { 0: 'Flat', 1: 'Percent' };
  * string. Read from the raw file because the value is ambiguous once parsed.
  */
 export function decodeLinkedIds(file, onWarn = () => {}) {
-  const line = /^\s*_linkedNodesIds:\s*(\S*)\s*$/m.exec(readFileSync(file, 'utf8'));
-  if (!line) return [];
-
-  const hex = line[1];
-  if (!hex) return [];
-  if (!/^[0-9a-fA-F]+$/.test(hex) || hex.length % 8 !== 0) {
-    onWarn(`${basename(file)}: _linkedNodesIds is not a whole number of int32s — links dropped`);
-    return [];
-  }
-
-  const ids = [];
-  for (let i = 0; i < hex.length; i += 8) {
-    const bytes = hex.slice(i, i + 8).match(/../g).reverse().join('');
-    ids.push(parseInt(bytes, 16));
-  }
-  return ids;
+  return intArray(rawField(file, '_linkedNodesIds'), onWarn, `${basename(file)}: _linkedNodesIds`);
 }
 
 /**

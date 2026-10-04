@@ -283,5 +283,22 @@
   "combat.resistSlots": "A fighter holds {n} status effects at once; past that, a new one cannot be applied.",
   "combat.curve": "Damage negated by Defense",
   "combat.curveHint": "Drag the slider or point anywhere on the curve.",
-  "combat.accuracyIsBonus": "Accuracy is a bonus and starts at zero, so plain Resistance is the resist rate: 64% Resistance against an attacker with no Accuracy is resisted 64% of the time. Every point of Accuracy cancels one point of Resistance."
+  "combat.accuracyIsBonus": "Accuracy is a bonus and starts at zero, so plain Resistance is the resist rate: 64% Resistance against an attacker with no Accuracy is resisted 64% of the time. Every point of Accuracy cancels one point of Resistance.",
+  "building.atLevelOne": "At level 1",
+  "building.effect.storagePages": "{n} storage pages",
+  "building.effect.forgeLevel": "Upgrade gear to level {n}",
+  "building.effect.teamSlots": "{n} monsters in your team",
+  "building.effect.builders": "{n} dwarves at work",
+  "building.effect.recipes": "{n} recipes available",
+  "building.production": "Production — {work}",
+  "building.speedAtLevel": "At level {level} the building works {n}% faster. Times below are the real ones at that level.",
+  "building.perUnit": "Per unit",
+  "building.queue": "Max queue",
+  "building.full": "Full queue",
+  "building.fromLevel": "From level {n}",
+  "vocab.workType.Miner": "Miner",
+  "vocab.workType.Lumberjack": "Lumberjack",
+  "vocab.workType.Builder": "Builder",
+  "vocab.workType.None": "—",
+  "building.speedAtLevelBase": "At level {level} the building works at its base speed. Times below are the real ones at that level."
 }

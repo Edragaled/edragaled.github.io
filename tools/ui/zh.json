@@ -282,5 +282,22 @@
   "combat.resistSlots": "一名单位同时最多持有 {n} 个状态效果，超出后新效果无法附加。",
   "combat.curve": "防御抵消的伤害",
   "combat.curveHint": "拖动滑块，或直接点击曲线上的任意位置。",
-  "combat.accuracyIsBonus": "命中是从零开始的加成，因此抗性数值本身就是抵抗率：面对命中为 0 的攻击者，64% 抗性就有 64% 的概率抵抗。每 1 点命中抵消 1 点抗性。"
+  "combat.accuracyIsBonus": "命中是从零开始的加成，因此抗性数值本身就是抵抗率：面对命中为 0 的攻击者，64% 抗性就有 64% 的概率抵抗。每 1 点命中抵消 1 点抗性。",
+  "building.atLevelOne": "1 级时",
+  "building.effect.storagePages": "{n} 页仓库",
+  "building.effect.forgeLevel": "装备可强化至 {n} 级",
+  "building.effect.teamSlots": "队伍中 {n} 只怪物",
+  "building.effect.builders": "{n} 名矮人同时工作",
+  "building.effect.recipes": "可用配方 {n} 个",
+  "building.production": "生产 — {work}",
+  "building.speedAtLevel": "{level} 级时建筑生产速度提升 {n}%。下方时间就是该等级的实际耗时。",
+  "building.perUnit": "每个",
+  "building.queue": "最大队列",
+  "building.full": "排满耗时",
+  "building.fromLevel": "{n} 级起",
+  "vocab.workType.Miner": "矿工",
+  "vocab.workType.Lumberjack": "伐木工",
+  "vocab.workType.Builder": "建筑工",
+  "vocab.workType.None": "—",
+  "building.speedAtLevelBase": "{level} 级时建筑以基础速度生产。下方时间就是该等级的实际耗时。"
 }

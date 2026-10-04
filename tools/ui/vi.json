@@ -282,5 +282,22 @@
   "combat.resistSlots": "Một đơn vị mang tối đa {n} hiệu ứng trạng thái cùng lúc; vượt quá thì không thêm được nữa.",
   "combat.curve": "Sát thương bị Phòng thủ chặn",
   "combat.curveHint": "Kéo thanh trượt, hoặc bấm thẳng vào bất kỳ điểm nào trên đường cong.",
-  "combat.accuracyIsBonus": "Chính xác là chỉ số cộng thêm và bắt đầu từ 0, nên riêng Kháng đã là tỉ lệ kháng: Kháng 64% trước kẻ không có Chính xác sẽ kháng 64% số lần. Mỗi điểm Chính xác triệt tiêu một điểm Kháng."
+  "combat.accuracyIsBonus": "Chính xác là chỉ số cộng thêm và bắt đầu từ 0, nên riêng Kháng đã là tỉ lệ kháng: Kháng 64% trước kẻ không có Chính xác sẽ kháng 64% số lần. Mỗi điểm Chính xác triệt tiêu một điểm Kháng.",
+  "building.atLevelOne": "Ở cấp 1",
+  "building.effect.storagePages": "{n} trang kho",
+  "building.effect.forgeLevel": "Nâng trang bị tới cấp {n}",
+  "building.effect.teamSlots": "{n} quái vật trong đội",
+  "building.effect.builders": "{n} người lùn làm việc",
+  "building.effect.recipes": "{n} công thức khả dụng",
+  "building.production": "Sản xuất — {work}",
+  "building.speedAtLevel": "Ở cấp {level}, công trình làm nhanh hơn {n}%. Thời gian bên dưới là giá trị thật ở cấp đó.",
+  "building.perUnit": "Mỗi đơn vị",
+  "building.queue": "Hàng chờ tối đa",
+  "building.full": "Hàng chờ đầy",
+  "building.fromLevel": "Từ cấp {n}",
+  "vocab.workType.Miner": "Thợ mỏ",
+  "vocab.workType.Lumberjack": "Tiều phu",
+  "vocab.workType.Builder": "Thợ xây",
+  "vocab.workType.None": "—",
+  "building.speedAtLevelBase": "Ở cấp {level}, công trình chạy ở tốc độ gốc. Thời gian bên dưới là giá trị thật ở cấp đó."
 }

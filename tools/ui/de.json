@@ -282,5 +282,22 @@
   "combat.resistSlots": "Ein Kämpfer trägt {n} Statuseffekte gleichzeitig; darüber hinaus lässt sich kein neuer anwenden.",
   "combat.curve": "Von der Verteidigung abgewehrter Schaden",
   "combat.curveHint": "Zieh den Regler oder klick irgendwo auf die Kurve.",
-  "combat.accuracyIsBonus": "Genauigkeit ist ein Bonus und beginnt bei null, also ist reine Resistenz die Widerstandsrate: 64% Resistenz gegen einen Angreifer ohne Genauigkeit widersteht in 64% der Fälle. Jeder Punkt Genauigkeit hebt einen Punkt Resistenz auf."
+  "combat.accuracyIsBonus": "Genauigkeit ist ein Bonus und beginnt bei null, also ist reine Resistenz die Widerstandsrate: 64% Resistenz gegen einen Angreifer ohne Genauigkeit widersteht in 64% der Fälle. Jeder Punkt Genauigkeit hebt einen Punkt Resistenz auf.",
+  "building.atLevelOne": "Auf Stufe 1",
+  "building.effect.storagePages": "{n} Lagerseiten",
+  "building.effect.forgeLevel": "Ausrüstung bis Stufe {n} aufwerten",
+  "building.effect.teamSlots": "{n} Monster im Team",
+  "building.effect.builders": "{n} Zwerge bei der Arbeit",
+  "building.effect.recipes": "{n} Rezepte verfügbar",
+  "building.production": "Produktion — {work}",
+  "building.speedAtLevel": "Auf Stufe {level} arbeitet das Gebäude {n}% schneller. Die Zeiten unten gelten genau für diese Stufe.",
+  "building.perUnit": "Pro Stück",
+  "building.queue": "Max. Warteschlange",
+  "building.full": "Volle Warteschlange",
+  "building.fromLevel": "Ab Stufe {n}",
+  "vocab.workType.Miner": "Bergmann",
+  "vocab.workType.Lumberjack": "Holzfäller",
+  "vocab.workType.Builder": "Baumeister",
+  "vocab.workType.None": "—",
+  "building.speedAtLevelBase": "Auf Stufe {level} arbeitet das Gebäude mit Grundgeschwindigkeit. Die Zeiten unten gelten genau für diese Stufe."
 }

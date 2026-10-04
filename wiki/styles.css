@@ -584,6 +584,14 @@ td .with-icon > .sprite { height: 22px; max-width: 22px; flex: none; }
 /* One effect per line: a rank often grants two or three at once. */
 .upgrade-levels span { display: block; }
 
+/* A produced item the building is still too low to make. */
+tr.locked { opacity: .5; }
+.locked-note { font-size: 12px; color: var(--text-faint); }
+
+/* The level picker sits inside a panel, so it drops the page-level margins. */
+.panel .filters { margin: 0 0 10px; }
+.chip.level { min-width: 34px; text-align: center; }
+
 /* ------------------------------------------------------------ calculators */
 
 .calc { margin-bottom: 14px; }

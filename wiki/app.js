@@ -850,6 +850,55 @@ const costText = (c) => {
   return parts.length ? parts.join(' · ') : t('building.free');
 };
 
+/** What one level of a building is worth, in the unit that building deals in. */
+const effectText = (kind, value) => t(`building.effect.${kind}`, { n: nf(value) });
+
+const effectAt = (building, level) => building.effect?.perLevel.find((p) => p.level === level)?.value ?? null;
+
+/**
+ * `GetProductionTime`: the authored time divided by the level's speed bonus.
+ * Level 0 has no bonus, which is why the table starts at 1.
+ */
+const productionSeconds = (production, baseSeconds, level) => {
+  const speed = level <= 0 ? 0 : (production.speedPerLevel[level - 1] ?? 0);
+  return Math.round(baseSeconds / (1 + speed / 100));
+};
+
+/**
+ * A production building's queue at one level. Re-rendered on every level change
+ * rather than patched in place: the rows themselves change, because an item that
+ * needs a higher building is not offered at all.
+ */
+function productionTable(building, level) {
+  const p = building.production;
+  const speed = p.speedPerLevel[level - 1] ?? 0;
+
+  // "0% faster" is a clumsy way to say "no bonus yet".
+  const headline = speed > 0
+    ? t('building.speedAtLevel', { level: nf(level), n: nf(speed) })
+    : t('building.speedAtLevelBase', { level: nf(level) });
+
+  return `<p class="empty-note">${esc(headline)}</p>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>${esc(t('col.item'))}</th>
+        <th class="num">${esc(t('building.perUnit'))}</th>
+        <th class="num">${esc(t('building.queue'))}</th>
+        <th class="num">${esc(t('building.full'))}</th>
+      </tr></thead>
+      <tbody>${p.elements.map((e) => {
+    const locked = e.minLevel > level;
+    const seconds = productionSeconds(p, e.baseSeconds, level);
+    return `<tr class="${locked ? 'locked' : ''}">
+          <td><span class="with-icon">${iconImg(e.icon, e.itemName)}${linkItem(e.item)}</span></td>
+          <td class="num">${locked ? `<span class="locked-note">${esc(t('building.fromLevel', { n: nf(e.minLevel) }))}</span>` : esc(duration(seconds))}</td>
+          <td class="num">${locked ? '—' : nf(e.maxQueue)}</td>
+          <td class="num">${locked ? '—' : esc(duration(seconds * e.maxQueue))}</td>
+        </tr>`;
+  }).join('')}</tbody>
+    </table></div>`;
+}
+
 function renderBuildings(params) {
   const category = params.get('category') ?? 'all';
   let rows = DB.buildings;
@@ -867,30 +916,68 @@ function renderBuildings(params) {
     <div class="panels" id="list"></div>
   </div>`);
 
-  frag.getElementById('list').append(...rows.map((b) => el(`<section class="panel">
-    <div class="skill-head" style="margin-bottom:10px">
-      <span class="thumb" style="width:44px;height:44px;flex:none">${iconImg(b.icon, b.name)}</span>
-      <span>
-        <span class="skill-name" style="font-size:16px">${esc(b.name)}</span>
-        <span class="skill-kind">${esc(lb('buildingCategory', b.category))}</span>
-      </span>
-    </div>
-    ${b.description ? `<p style="margin:0 0 12px;font-size:13px;color:var(--text-dim)">${esc(plain(b.description))}</p>` : ''}
-    <dl class="stats">
-      <div><dt>${esc(t('building.buy'))}</dt><dd>${costText(b.purchase)}</dd></div>
-      ${b.purchase.buildSeconds ? `<div><dt>${esc(t('building.buildTime'))}</dt><dd>${esc(duration(b.purchase.buildSeconds))}</dd></div>` : ''}
-      <div><dt>${esc(t('building.maxLevel'))}</dt><dd>${nf(b.maxLevel)}</dd></div>
-    </dl>
-    ${b.upgrades.length ? `<h3 style="margin:14px 0 8px">${esc(t('building.upgrades'))}</h3>
-      <div class="table-wrap"><table><thead><tr><th>${esc(t('col.level'))}</th><th>${esc(t('col.cost'))}</th><th>${esc(t('col.time'))}</th></tr></thead><tbody>
-        ${b.upgrades.map((u) => `<tr><td>${u.level}</td><td>${costText(u)}</td><td>${esc(duration(u.buildSeconds))}</td></tr>`).join('')}
-      </tbody></table></div>` : ''}
-  </section>`)));
+  frag.getElementById('list').append(...rows.map((b) => {
+    const firstEffect = effectAt(b, 1);
+
+    const panel = el(`<section class="panel">
+      <div class="skill-head" style="margin-bottom:10px">
+        <span class="thumb" style="width:44px;height:44px;flex:none">${iconImg(b.icon, b.name)}</span>
+        <span>
+          <span class="skill-name" style="font-size:16px">${esc(b.name)}</span>
+          <span class="skill-kind">${esc(lb('buildingCategory', b.category))}</span>
+        </span>
+      </div>
+      ${b.description ? `<p style="margin:0 0 12px;font-size:13px;color:var(--text-dim)">${esc(plain(b.description))}</p>` : ''}
+      <dl class="stats">
+        <div><dt>${esc(t('building.buy'))}</dt><dd>${costText(b.purchase)}</dd></div>
+        ${b.purchase.buildSeconds ? `<div><dt>${esc(t('building.buildTime'))}</dt><dd>${esc(duration(b.purchase.buildSeconds))}</dd></div>` : ''}
+        <div><dt>${esc(t('building.maxLevel'))}</dt><dd>${nf(b.maxLevel)}</dd></div>
+        ${firstEffect == null ? '' : `<div><dt>${esc(t('building.atLevelOne'))}</dt><dd>${esc(effectText(b.effect.kind, firstEffect))}</dd></div>`}
+      </dl>
+      ${b.upgrades.length ? `<h3 style="margin:14px 0 8px">${esc(t('building.upgrades'))}</h3>
+        <div class="table-wrap"><table><thead><tr>
+          <th>${esc(t('col.level'))}</th>
+          ${b.effect ? `<th>${esc(t('col.effect'))}</th>` : ''}
+          <th>${esc(t('col.cost'))}</th><th>${esc(t('col.time'))}</th>
+        </tr></thead><tbody>
+          ${b.upgrades.map((u) => `<tr>
+            <td>${u.level}</td>
+            ${b.effect ? `<td>${esc(effectText(b.effect.kind, effectAt(b, u.level) ?? 0))}</td>` : ''}
+            <td>${costText(u)}</td>
+            <td>${esc(duration(u.buildSeconds))}</td>
+          </tr>`).join('')}
+        </tbody></table></div>` : ''}
+      ${b.production ? `<h3 style="margin:16px 0 8px">${esc(t('building.production', { work: lb('workType', b.production.workType) }))}</h3>
+        <div class="filters" data-level-picker>
+          <div class="filter-group"><span>${esc(t('col.level'))}</span>
+            ${Array.from({ length: b.maxLevel }, (_, i) => i + 1).map((level) => `
+              <button type="button" class="chip level" data-level="${level}" aria-pressed="${level === b.maxLevel}">${level}</button>`).join('')}
+          </div>
+        </div>
+        <div data-production></div>` : ''}
+    </section>`);
+
+    if (b.production) {
+      const host = panel.querySelector('[data-production]');
+      const buttons = [...panel.querySelectorAll('.chip.level')];
+      // Opens at max level: the interesting number is what the building becomes,
+      // and level 1 is already the row above.
+      const show = (level) => { host.innerHTML = productionTable(b, level); };
+      for (const button of buttons) {
+        button.addEventListener('click', () => {
+          for (const other of buttons) other.setAttribute('aria-pressed', String(other === button));
+          show(Number(button.dataset.level));
+        });
+      }
+      show(b.maxLevel);
+    }
+
+    return panel;
+  }));
 
   wireFilters(frag);
   return frag;
 }
-
 /* ----------------------------------------------------------- status effects */
 
 const statusCard = (s) => el(`<section class="status s-${cls(s.group)}">

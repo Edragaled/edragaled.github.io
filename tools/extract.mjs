@@ -17,7 +17,7 @@ import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, stat
 import { join, relative, dirname, basename, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-import { readUnityYaml, parseUnityYaml, fp } from './lib/unity-yaml.mjs';
+import { readUnityYaml, parseUnityYaml, fp, intArray, rawField } from './lib/unity-yaml.mjs';
 import { assetGuid, buildPrototypeIndex, readMetaGuid, PREFAB_PROTOTYPE_FILE_ID } from './lib/quantum-guid.mjs';
 import { resolveSprite } from './lib/sprite.mjs';
 import { readTalentValues, fillTalentText, romanNumeral, readTalentDrawOdds } from './lib/talents.mjs';
@@ -75,6 +75,7 @@ const UI_STRINGS = join(HERE, 'ui');
 const BASTION_UPGRADE_SCRIPTS = join(ASSETS, 'QuantumUser', 'Simulation', 'AssetTypes', 'Bastion', 'Upgrades', 'PlayerUpgrades');
 const BASTION_UPGRADE_ASSETS = join(ASSETS, 'QuantumUser', 'Resources', 'DB', 'Bastion', 'PlayerUpgrades');
 const SKILLTREE_CONFIG_SOURCE = join(ASSETS, 'Core', 'Scripts', 'Systems', 'SkillTreeSystem', 'SkillTreeConfig.cs');
+const BUILDING_LISTENERS = join(ASSETS, 'Core', 'Scripts', 'Systems', 'BuildingSystem', 'BuildingComponents');
 
 // The biome folders under LootTables/Monsters and the generator name prefixes
 // disagree on one name; the folder spelling is what the wiki shows.
@@ -1064,7 +1065,98 @@ function extractRecipes(itemsByGuid) {
  * `BuildingCosts` is indexed by level - 1, so entry 0 is the purchase and the
  * rest are upgrades.
  */
-function extractBuildings(guidIndex, en, itemsByGuid) {
+const WORK_TYPES = ['None', 'Builder', 'Miner', 'Lumberjack'];
+
+/**
+ * What a level of a building actually buys you.
+ *
+ * None of this is authored: each effect is a one-line C# getter on the
+ * building's listener, so the formula is reproduced here and the source is
+ * checked for the shape it was read from. If a getter is rewritten the run
+ * warns and the column disappears, rather than publishing a stale curve.
+ */
+const BUILDING_EFFECTS = {
+  warehouse: {
+    file: 'WarehouseBuildingListener.cs',
+    guard: /GetStoragePagesUnlocked\(int level\)\s*=>\s*level;/,
+    kind: 'storagePages',
+    at: (level) => level,
+  },
+  forge: {
+    file: 'ForgeBuildingListener.cs',
+    guard: /GetMaxItemLevelUnlocked\(int level\)\s*=>\s*level \* 3;/,
+    kind: 'forgeLevel',
+    at: (level) => level * 3,
+  },
+  monster_altar: {
+    file: 'MonsterAltarBuildingListener.cs',
+    guard: /GetMonsterTeamCapacity\(int level\)\s*=>\s*level;/,
+    kind: 'teamSlots',
+    at: (level) => level,
+  },
+  dwarf_hut: {
+    file: 'DwarfHutBuildingListener.cs',
+    guard: /MaxAvailableDwarves = building\.Level;/,
+    kind: 'builders',
+    at: (level) => level,
+  },
+};
+
+/** Crafting stations unlock recipes instead, which the recipe data already says. */
+const STATION_OF = { workshop: 'Workshop', modern_workshop: 'Modern Workshop' };
+
+function buildingEffect(key, maxLevel, recipes) {
+  const station = STATION_OF[key];
+  if (station) {
+    const available = (level) => recipes.filter((r) => r.station === station && r.stationLevel <= level).length;
+    // A station whose recipes never mention it would show a flat zero.
+    if (!available(maxLevel)) return null;
+    return { kind: 'recipes', perLevel: levels(maxLevel).map((level) => ({ level, value: available(level) })) };
+  }
+
+  const effect = BUILDING_EFFECTS[key];
+  if (!effect) return null;
+
+  const file = join(BUILDING_LISTENERS, effect.file);
+  if (!existsSync(file)) { warn(`${effect.file} not found — ${key} upgrades show no effect`); return null; }
+  if (!effect.guard.test(readFileSync(file, 'utf8'))) {
+    warn(`${effect.file} no longer defines ${effect.kind} the way the wiki reads it — ${key} upgrades show no effect`);
+    return null;
+  }
+
+  return { kind: effect.kind, perLevel: levels(maxLevel).map((level) => ({ level, value: effect.at(level) })) };
+}
+
+const levels = (maxLevel) => Array.from({ length: maxLevel }, (_, i) => i + 1);
+
+/**
+ * A production building's queue. `ProductionSpeedLevels` is another hex int
+ * array, so it is read from the raw text; the site divides the base time by
+ * `1 + speed / 100`, which is what `GetProductionTime` does.
+ */
+function buildingProduction(file, b, guidIndex, itemsByGuid) {
+  if (!Array.isArray(b.ProductionElements)) return null;
+
+  const speedPerLevel = intArray(rawField(file, 'ProductionSpeedLevels'), warn, `${basename(file)}: ProductionSpeedLevels`);
+
+  const elements = b.ProductionElements.map((p) => {
+    const item = itemsByGuid.get(p.ItemData?.guid);
+    if (!item) { warn(`${basename(file, '.asset')} produces an item that does not resolve — skipped`); return null; }
+    return {
+      item: item.key,
+      itemName: item.name,
+      icon: item.icon,
+      baseSeconds: num(p.ProductionTime),
+      maxQueue: num(p.MaxProduction),
+      minLevel: num(p.MinBuildingLevel),
+    };
+  }).filter(Boolean);
+
+  if (!elements.length) return null;
+  return { workType: E.named(WORK_TYPES, b.WorkType, 'None'), speedPerLevel, elements };
+}
+
+function extractBuildings(guidIndex, en, itemsByGuid, recipes) {
   const buildings = [];
 
   for (const { file, doc } of loadDocs(walk(join(SO, 'Building'), isAsset))) {
@@ -1096,6 +1188,8 @@ function extractBuildings(guidIndex, en, itemsByGuid) {
       upgrades: costs.slice(1),
       unlimited: !!b.UnlimitedBuildAmount,
       icon: queueIcon((b.BuildingIcons ?? [])[0], guidIndex, 'buildings', key),
+      effect: buildingEffect(key, costs.length, recipes),
+      production: buildingProduction(file, b, guidIndex, itemsByGuid),
     });
   }
 
@@ -2057,7 +2151,7 @@ function extractLocalized(L, structural) {
   const recipes = extractRecipes(itemsByGuid);
   const statuses = extractStatusEffects(guidIndex, L);
   const talents = extractTalents(guidIndex, L);
-  const buildings = extractBuildings(guidIndex, L, itemsByGuid);
+  const buildings = extractBuildings(guidIndex, L, itemsByGuid, recipes);
   const monsterLookup = {
     linkable: new Set(monsters.map((m) => m.key)),
     display: displayByKey,
@@ -2133,6 +2227,7 @@ function collectVocabulary(p) {
     buildingCategory: uniq(p.buildings.map((b) => b.category)),
     setKind: uniq(p.gamemodes.flatMap((m) => m.groups.map((g) => g.setKind))),
     upgradeCategory: uniq(p.gamemodes.flatMap((m) => (m.bastion?.upgrades ?? []).map((u) => u.category))),
+    workType: uniq(p.buildings.map((x) => x.production?.workType)),
     stat: uniq([...p.sets.flatMap((s) => s.bonuses.map((b) => b.stat)),
       ...(p.skilltree?.nodes ?? []).flatMap((n) => n.grants.map((g) => g.stat))]),
     nodeType: uniq((p.skilltree?.nodes ?? []).map((n) => n.type)),

@@ -282,5 +282,22 @@
   "combat.resistSlots": "1 体が同時に保持できる状態効果は {n} 個までで、それを超えると新しい効果は付与されません。",
   "combat.curve": "防御で軽減されるダメージ",
   "combat.curveHint": "スライダーを動かすか、曲線上を直接クリックしてください。",
-  "combat.accuracyIsBonus": "命中はボーナスでゼロから始まるため、耐性の値がそのまま抵抗率になります。命中 0 の相手に対する耐性 64% は 64% の確率で抵抗します。命中 1 ポイントごとに耐性 1 ポイントを打ち消します。"
+  "combat.accuracyIsBonus": "命中はボーナスでゼロから始まるため、耐性の値がそのまま抵抗率になります。命中 0 の相手に対する耐性 64% は 64% の確率で抵抗します。命中 1 ポイントごとに耐性 1 ポイントを打ち消します。",
+  "building.atLevelOne": "レベル1時点",
+  "building.effect.storagePages": "倉庫 {n} ページ",
+  "building.effect.forgeLevel": "装備をレベル {n} まで強化",
+  "building.effect.teamSlots": "チームにモンスター {n} 体",
+  "building.effect.builders": "働くドワーフ {n} 人",
+  "building.effect.recipes": "レシピ {n} 種が解放",
+  "building.production": "生産 — {work}",
+  "building.speedAtLevel": "レベル {level} では生産速度が {n}% 上がります。下の時間はそのレベルでの実際の値です。",
+  "building.perUnit": "1 個あたり",
+  "building.queue": "最大同時数",
+  "building.full": "満杯まで",
+  "building.fromLevel": "レベル {n} から",
+  "vocab.workType.Miner": "採掘",
+  "vocab.workType.Lumberjack": "伐採",
+  "vocab.workType.Builder": "建築",
+  "vocab.workType.None": "—",
+  "building.speedAtLevelBase": "レベル {level} では生産速度は基本値のままです。下の時間はそのレベルでの実際の値です。"
 }

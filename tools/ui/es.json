@@ -282,5 +282,22 @@
   "combat.resistSlots": "Un luchador mantiene {n} efectos de estado a la vez; pasado eso, no puede aplicarse uno nuevo.",
   "combat.curve": "Daño anulado por la Defensa",
   "combat.curveHint": "Arrastra el control o haz clic en cualquier punto de la curva.",
-  "combat.accuracyIsBonus": "La Precisión es un bono y parte de cero, así que la Resistencia sola es la tasa de resistencia: 64 % de Resistencia contra un atacante sin Precisión se resiste el 64 % de las veces. Cada punto de Precisión anula uno de Resistencia."
+  "combat.accuracyIsBonus": "La Precisión es un bono y parte de cero, así que la Resistencia sola es la tasa de resistencia: 64 % de Resistencia contra un atacante sin Precisión se resiste el 64 % de las veces. Cada punto de Precisión anula uno de Resistencia.",
+  "building.atLevelOne": "En el nivel 1",
+  "building.effect.storagePages": "{n} páginas de almacén",
+  "building.effect.forgeLevel": "Mejora el equipo hasta el nivel {n}",
+  "building.effect.teamSlots": "{n} monstruos en el equipo",
+  "building.effect.builders": "{n} enanos trabajando",
+  "building.effect.recipes": "{n} recetas disponibles",
+  "building.production": "Producción — {work}",
+  "building.speedAtLevel": "En el nivel {level} el edificio trabaja un {n} % más rápido. Los tiempos de abajo son los reales en ese nivel.",
+  "building.perUnit": "Por unidad",
+  "building.queue": "Cola máx.",
+  "building.full": "Cola llena",
+  "building.fromLevel": "Desde el nivel {n}",
+  "vocab.workType.Miner": "Minero",
+  "vocab.workType.Lumberjack": "Leñador",
+  "vocab.workType.Builder": "Constructor",
+  "vocab.workType.None": "—",
+  "building.speedAtLevelBase": "En el nivel {level} el edificio trabaja a su velocidad base. Los tiempos de abajo son los reales en ese nivel."
 }
