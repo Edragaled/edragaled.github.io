@@ -193,9 +193,11 @@ Scope is deliberately narrow for now. Left out, each easy to switch back on:
 | `LootTables/Tutorial/**` | `EXCLUDED_LOOT_KINDS` — scripted one-offs, not farmable |
 | Items nothing references (21 more) | `findUnreferencedItems()` — see below |
 | Event summon banners | skipped in `extractSummons()` — limited-time, so not static data |
-| Non-purchasable buildings | `extractBuildings()` — ruins repaired in place, not bought |
-| Bastion, PvP and Arena modes | exist in the project but are not extracted yet |
+| PvP and Arena modes | exist in the project but are not extracted yet |
 | Unreleased dungeons | a location with no waves anywhere excludes itself — see below |
+| Forgotten Depths | `UNRELEASED_LOCATIONS` — authored, not released |
+| The Master tier (37 items, 25 recipes, 6 sets) | `UNRELEASED_GEAR_SETS` / `UNRELEASED_MATERIALS` — see below |
+| Master adventure levels and drop column | `UNRELEASED_DIFFICULTIES` — see below |
 
 ## What the data means
 
@@ -203,8 +205,9 @@ Scope is deliberately narrow for now. Left out, each easy to switch back on:
   per-level and per-difficulty multipliers a stage applies. Values a variant does
   not override are inherited from `Monster base.prefab`, and the generator follows
   that chain.
-- **Drop chances** are listed per difficulty (Normal / Hard / Master) exactly as
-  stored on the loot entry. The **Amount** column is the RNGNeeds weighted
+- **Drop chances** are listed per difficulty exactly as stored on the loot entry,
+  one column per entry in `LOOT_DIFFICULTIES` — Normal and Hard today, because
+  Master is held back. The **Amount** column is the RNGNeeds weighted
   distribution, e.g. `1 (80%), 2 (20%)`.
 - **Only items the project actually uses are published.** An item is kept when
   something points at it — a recipe, a loot table, a building cost, a shop product,
@@ -395,6 +398,28 @@ the real ones at that level rather than the authored base.
 `ProductionSpeedLevels` is **another hex int array**, the same Unity encoding as
 the skill tree's `_linkedNodesIds`, so it goes through `intArray`/`rawField` in
 `lib/unity-yaml.mjs` and is never taken from the parsed document.
+
+### The Master tier is held back by hand
+
+Six gear sets (Adamantine, Amberwood, Savage, Supreme Steel, Titanite, Voidshard),
+the thirteen materials and bars they eat, the twenty-five crafts that make them and
+the Master adventure difficulty are finished in the project and not in players'
+hands. Nothing in the data says so — a finished set looks exactly like a live one —
+so three lists in `extract.mjs` name them: `UNRELEASED_GEAR_SETS`,
+`UNRELEASED_MATERIALS` and `UNRELEASED_DIFFICULTIES`.
+
+Naming a set is enough. `pruneExcludedItems()` resolves the names to item keys and
+then everything that points at them follows: the crafts, the loot entries, the set
+bonuses, the cross-links, and the recipe count a Workshop level advertises. Nine
+monster loot tables held nothing but a Master material, so they drop out entirely
+and the monsters stop linking to them.
+
+Every run warns about what it holds back and about any name that matches nothing, so
+the lists cannot rot and cannot be forgotten: delete a line and the content appears.
+
+> Goblin Chieftain is the one monster the hold-back leaves empty-handed. Its Strong
+> Leather drop was replaced in the project by Tribal Ring, so with Tribal Ring held
+> back it has no drop left to show.
 
 ### Ruins are listed too, labelled differently
 

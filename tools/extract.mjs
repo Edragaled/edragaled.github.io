@@ -112,6 +112,28 @@ const EXCLUDED_SUMMON_CONFIGS = new Set(['TestEventSummonConfig']);
  */
 const UNRELEASED_LOCATIONS = new Set(['ForgottenDepths']);
 
+/**
+ * The Master tier, held back the same way and for the same reason: the gear, the
+ * materials it eats, the crafts that make it and the adventure difficulty that
+ * gates it all exist in the project but not in players' hands.
+ *
+ * A gear set is named once and covers its pieces and its bar, so the crafts, the
+ * loot entries and the set bonuses follow from `pruneExcludedItems`. A name that
+ * matches nothing warns rather than passing silently, because a rename would
+ * otherwise quietly publish the content.
+ */
+const UNRELEASED_GEAR_SETS = ['adamantine', 'amberwood', 'savage', 'supreme_steel', 'titanite', 'voidshard'];
+const UNRELEASED_MATERIALS = new Set(['amber_sap', 'concentrated_venom', 'cyclops_eye', 'divine_gold',
+  'dragon_scale', 'jarl_skull', 'marsh_flesh', 'ogre_soap', 'tribal_ring', 'volcanic_carapace']);
+const UNRELEASED_DIFFICULTIES = new Set(['Master']);
+
+/** Loot probability columns, minus any difficulty the wiki is holding back. */
+const LOOT_DIFFICULTIES = [
+  { label: 'Normal', field: 'NormalProbability' },
+  { label: 'Hard', field: 'HardProbability' },
+  { label: 'Master', field: 'MasterProbability' },
+].filter((d) => !UNRELEASED_DIFFICULTIES.has(d.label));
+
 // Loot table folders left out. Tutorial props are scripted one-offs, not
 // something a player can go and farm.
 const EXCLUDED_LOOT_KINDS = new Set(['Tutorial']);
@@ -705,11 +727,7 @@ function extractLootTables(guidIndex, en, itemsByGuid, spawns, resourcePrefabs) 
         return {
           item: item?.key ?? null,
           itemName: item?.name ?? `(missing item ${entry.Item?.guid ?? '?'})`,
-          chance: {
-            normal: pct(entry.NormalProbability),
-            hard: pct(entry.HardProbability),
-            master: pct(entry.MasterProbability),
-          },
+          chance: Object.fromEntries(LOOT_DIFFICULTIES.map((d) => [d.label.toLowerCase(), pct(entry[d.field])])),
           amounts: amountDistribution(entry.Count),
         };
       }),
@@ -1766,6 +1784,11 @@ function extractAdventure(guidIndex, en, monstersByKey, generators, itemsByGuid)
       ['Hard', b.HardLevels],
       ['Master', b.MasterLevels],
     ]
+      .filter(([label]) => {
+        if (!UNRELEASED_DIFFICULTIES.has(label)) return true;
+        warn(`adventure ${label} levels are held back by UNRELEASED_DIFFICULTIES — remove it there when the content ships`);
+        return false;
+      })
       .map(([label, refs]) => ({
         label,
         levels: (refs ?? [])
@@ -2078,13 +2101,33 @@ function sweepByFriendlyId(candidates, files, itemFileByKey) {
 
 const escapeRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/** The Master-tier items named by the hold-back lists, as item keys. */
+function heldBackItems(items) {
+  const held = new Set();
+
+  for (const set of UNRELEASED_GEAR_SETS) {
+    const pieces = items.filter((i) => i.key === set || i.key.startsWith(`${set}_`));
+    if (!pieces.length) { warn(`UNRELEASED_GEAR_SETS names ${set}, which matches no item — fix the name or drop it`); continue; }
+    for (const piece of pieces) held.add(piece.key);
+  }
+
+  for (const key of UNRELEASED_MATERIALS) {
+    if (items.some((i) => i.key === key)) held.add(key);
+    else warn(`UNRELEASED_MATERIALS names ${key}, which is not an item — fix the name or drop it`);
+  }
+
+  if (held.size) warn(`${held.size} Master-tier items are held back by UNRELEASED_GEAR_SETS/UNRELEASED_MATERIALS — remove them there when the content ships`);
+  return held;
+}
+
 /**
  * Remove excluded items and every reference to them, so the site never links to
  * something that is not in the payload.
  */
-function pruneExcludedItems({ items, sets, tables, recipes, unreferenced, gamemodes }) {
+function pruneExcludedItems({ items, sets, tables, recipes, unreferenced, gamemodes, buildings, monsters }) {
   const dropped = new Set([
     ...items.filter((i) => EXCLUDED_ITEM_CATEGORIES.has(i.category)).map((i) => i.key),
+    ...heldBackItems(items),
     ...unreferenced,
   ]);
   if (!dropped.size) return { items, sets, tables, recipes, dropped };
@@ -2097,6 +2140,12 @@ function pruneExcludedItems({ items, sets, tables, recipes, unreferenced, gamemo
     if (table.entries.length !== before) warn(`loot table ${table.id} dropped ${before - table.entries.length} excluded item entr(ies)`);
   }
 
+  // A table whose every entry was pruned has nothing left to show, and a monster
+  // pointing at one would link to a page that no longer exists.
+  const keptTables = tables.filter((t) => t.entries.length);
+  const goneTables = new Set(tables.filter((t) => !t.entries.length).map((t) => t.id));
+  for (const monster of monsters ?? []) if (goneTables.has(monster.lootTable)) monster.lootTable = null;
+
   const keptRecipes = recipes.filter((r) => {
     if (dropped.has(r.output)) return false;
     if (r.ingredients.some((i) => dropped.has(i.item))) {
@@ -2105,6 +2154,12 @@ function pruneExcludedItems({ items, sets, tables, recipes, unreferenced, gamemo
     }
     return true;
   });
+
+  // Station levels advertise how many recipes they unlock, counted before the
+  // prune; recount so the number matches what the Recipes page lists.
+  for (const building of buildings ?? []) {
+    if (building.effect?.kind === 'recipes') building.effect = buildingEffect(building.key, building.maxLevel, keptRecipes);
+  }
 
   // Raid loot can name an item the wiki excludes; keep the name, drop the link.
   for (const mode of gamemodes ?? []) {
@@ -2132,7 +2187,7 @@ function pruneExcludedItems({ items, sets, tables, recipes, unreferenced, gamemo
     item.craftedBy = item.craftedBy.filter((id) => keptRecipes.some((r) => r.id === id));
   }
 
-  return { items: kept, sets: keptSets, tables, recipes: keptRecipes, dropped };
+  return { items: kept, sets: keptSets, tables: keptTables, recipes: keptRecipes, dropped };
 }
 
 // --------------------------------------------------------------------- main
@@ -2220,6 +2275,7 @@ function collectVocabulary(p) {
       ...p.gamemodes.flatMap((m) => m.groups.map((g) => g.biome))]),
     slot: uniq(p.items.map((i) => i.slot)),
     difficulty: uniq([...p.tables.flatMap((t) => t.spawns.map((s) => s.difficulty)),
+      ...LOOT_DIFFICULTIES.map((d) => d.label),
       ...p.gamemodes.flatMap((m) => m.groups.flatMap((g) => g.sets.map((s) => s.label)))]),
     station: uniq(p.recipes.map((r) => r.station)),
     currency: uniq([...p.buildings.map((b) => b.purchase.currency),
@@ -2312,6 +2368,7 @@ function main() {
       labels: buildLabels(maps.get(code), uiStrings.get(code), collectVocabulary(p)),
       summonBanners: p.banners,
       rarities: E.ItemRarities,
+      lootDifficulties: LOOT_DIFFICULTIES.map((d) => d.label),
       monsterRarities: E.MonsterRarities,
       rarityColors: { item: E.ItemRarityColors, monster: E.MonsterRarityColors },
       elements: E.Elements,

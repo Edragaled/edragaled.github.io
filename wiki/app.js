@@ -113,6 +113,13 @@ const biomeBadges = (biomes) => (
     : '—'
 );
 
+/** One probability column per difficulty the payload carries. */
+const chanceColumns = () => (DB.meta?.lootDifficulties ?? []).map((d) => ({
+  label: lb('difficulty', d),
+  num: true,
+  render: (row) => chanceCell(row.chance[d.toLowerCase()]),
+}));
+
 function chanceCell(p) {
   if (p == null) return '<span class="chance">—</span>';
   return `<span class="chance"><i><b style="width:${Math.min(100, p)}%"></b></i>${p}%</span>`;
@@ -444,9 +451,7 @@ function renderItemDetail(key) {
         d.monster ? `<a href="#/monster/${slug(d.monster)}">${esc(d.source)}</a>` : `<a href="#/loot/${slug(d.table)}">${esc(d.source)}</a>`}</span>` },
       { label: t('col.kind'), render: (d) => `<span class="badge">${esc(lb('kind', d.kind))}</span>` },
       { label: t('col.biome'), render: (d) => biomeBadges(d.biomes) },
-      { label: lb('difficulty', 'Normal'), num: true, render: (d) => chanceCell(d.chance.normal) },
-      { label: lb('difficulty', 'Hard'), num: true, render: (d) => chanceCell(d.chance.hard) },
-      { label: lb('difficulty', 'Master'), num: true, render: (d) => chanceCell(d.chance.master) },
+      ...chanceColumns(),
       { label: t('col.amount'), num: true, render: (d) => esc(amountsText(d.amounts)) },
     ], drops, null, 'asc', () => {}));
   }
@@ -547,9 +552,7 @@ function lootEntriesTable(entries) {
       return `<span class="with-icon">${it?.icon ? iconImg(it.icon) : ''}${linkItem(e.item)}</span>`;
     } },
     { label: t('col.rarity'), render: (e) => { const it = IX.item.get(e.item); return it ? rarityBadge(it.rarity) : '—'; } },
-    { label: lb('difficulty', 'Normal'), num: true, render: (e) => chanceCell(e.chance.normal) },
-    { label: lb('difficulty', 'Hard'), num: true, render: (e) => chanceCell(e.chance.hard) },
-    { label: lb('difficulty', 'Master'), num: true, render: (e) => chanceCell(e.chance.master) },
+    ...chanceColumns(),
     { label: t('col.amount'), num: true, render: (e) => esc(amountsText(e.amounts)) },
   ], entries.slice().sort((a, b) => (b.chance.normal ?? 0) - (a.chance.normal ?? 0)), null, 'asc', () => {});
 }
