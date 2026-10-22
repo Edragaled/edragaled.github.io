@@ -120,6 +120,9 @@ const chanceColumns = () => (DB.meta?.lootDifficulties ?? []).map((d) => ({
   render: (row) => chanceCell(row.chance[d.toLowerCase()]),
 }));
 
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+const roman = (n) => ROMAN[n] ?? String(n);
+
 function chanceCell(p) {
   if (p == null) return '<span class="chance">—</span>';
   return `<span class="chance"><i><b style="width:${Math.min(100, p)}%"></b></i>${p}%</span>`;
@@ -1195,6 +1198,7 @@ function renderCombat() {
     <h3>${esc(t('combat.whatResists'))}</h3>
     <ul class="status-effects combat-notes">
       <li>${esc(t('combat.resistDebuffsOnly', { debuffs: lb('group', 'Debuff'), buffs: lb('group', 'Buff') }))}</li>
+      ${c.resistsHostileEffects ? `<li>${esc(t('combat.resistHostile'))}</li>` : ''}
       <li>${esc(t('combat.resistImmunity'))}</li>
       <li>${esc(t('combat.resistMalediction'))}</li>
       <li>${esc(t('combat.resistForced'))}</li>
@@ -1204,6 +1208,73 @@ function renderCombat() {
 
   wireCombat(frag, c);
   return frag;
+}
+
+/**
+ * Ascension. Three numbers do all the work — what a point is worth, what it takes
+ * to ascend, what a reroll costs — so the page is two small tables around them
+ * rather than prose a reader has to total up by hand.
+ */
+function renderAscension() {
+  const a = DB.meta?.ascension;
+  if (!a) return el(`<div><h1>${esc(t('ascension.title'))}</h1><p class="empty-note">${esc(t('ascension.empty'))}</p></div>`);
+
+  const stats = ['Max Health', 'Attack', 'Defense'];
+  // A tier and a perfect roll are worth the same, which is what makes ascending
+  // safe; the table says so by putting the two side by side.
+  const per = a.percentPerTier;
+  const tiers = Array.from({ length: a.maxTier + 1 }, (_, tier) => ({
+    tier,
+    kept: tier * per,
+    best: (tier + 1) * per,
+  }));
+  const lockCounts = Array.from({ length: a.statCount }, (_, i) => i);
+
+  return el(`<div>
+    <h1>${esc(t('ascension.title'))}</h1>
+    <p class="subtitle">${esc(t('ascension.subtitle', { stats: stats.map((s) => lb('stat', s)).join(', ') }))}</p>
+    ${a.unlockLevel ? `<p class="empty-note">${esc(t('ascension.unlock', { n: nf(a.unlockLevel) }))}</p>` : ''}
+
+    <h2>${esc(t('ascension.bonus'))}</h2>
+    <p class="empty-note">${esc(t('ascension.bonusNote', { n: a.statCount, max: nf(a.maxStat), per: nf(per) }))}</p>
+
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>${esc(t('ascension.colTier'))}</th>
+        <th class="num">${esc(t('ascension.colKept'))}</th>
+        <th class="num">${esc(t('ascension.colBest'))}</th>
+      </tr></thead>
+      <tbody>${tiers.map((row) => `<tr>
+        <td class="rank">${row.tier ? esc(roman(row.tier)) : esc(t('ascension.tierNone'))}</td>
+        <td class="num">+${nf(row.kept)}%</td>
+        <td class="num">+${nf(row.best)}%</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+
+    <h2>${esc(t('ascension.ascend'))}</h2>
+    <p class="empty-note">${esc(t('ascension.ascendNote', {
+    n: nf(a.threshold), max: nf(a.maxStat * a.statCount), tier: roman(a.maxTier),
+  }))}</p>
+
+    <h2>${esc(t('ascension.cost'))}</h2>
+    <p class="empty-note">${esc(t('ascension.costNote'))}</p>
+
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>${esc(t('ascension.colTier'))}</th>
+        ${lockCounts.map((n) => `<th class="num">${esc(n ? tn('ascension.locks', n) : t('ascension.noLock'))}</th>`).join('')}
+      </tr></thead>
+      <tbody>${tiers.map((row) => `<tr>
+        <td class="rank">${row.tier ? esc(roman(row.tier)) : esc(t('ascension.tierNone'))}</td>
+        ${lockCounts.map((n) => `<td class="num">${nf(a.rollCosts[n] * (2 ** row.tier))}</td>`).join('')}
+      </tr>`).join('')}</tbody>
+    </table></div>
+
+    <ul class="status-effects combat-notes">
+      <li>${esc(t('ascension.allLocked', { n: a.statCount }))}</li>
+      <li>${esc(t('ascension.shared'))}</li>
+    </ul>
+  </div>`);
 }
 
 /**
@@ -1673,6 +1744,28 @@ function renderBastion(mode) {
   return frag;
 }
 
+/**
+ * What the stage does to its enemies beyond their level, as one quiet line under
+ * the header. The resistance shown here is the number the Combat tab's resist
+ * formula is fed in practice.
+ */
+function levelRules(l) {
+  if (!l.rules) return '';
+  const r = l.rules;
+  const parts = [];
+  if (r.resistance) parts.push(t('mode.ruleResistance', { n: nf(Math.round(r.resistance * 1000) / 10) }));
+  if (r.accuracy) parts.push(t('mode.ruleAccuracy', { n: nf(Math.round(r.accuracy * 1000) / 10) }));
+  if (r.talentLevel) parts.push(t('mode.ruleTalent', { rank: roman(r.talentLevel) }));
+  if (r.bossTalent) {
+    const talent = DB.talents.find((x) => x.key === r.bossTalent.talent);
+    parts.push(t('mode.ruleBossTalent', {
+      talent: talent?.name ?? prettifyName(r.bossTalent.talent),
+      rank: roman(r.bossTalent.level),
+    }));
+  }
+  return `<p class="empty-note" style="margin:-2px 0 11px">${esc(parts.join(' · '))}</p>`;
+}
+
 /** Odds panels: dungeons roll an accessory, raids draw from named loot pools. */
 function dropPanels(l) {
   const parts = [];
@@ -1755,6 +1848,7 @@ function renderChapter(key, params) {
         ${l.teamSlots ? `<span class="badge">${esc(tn('mode.slots', l.teamSlots))}</span>` : ''}
       </span>
     </div>
+    ${levelRules(l)}
     ${dropPanels(l)}
     <div class="table-wrap"><table>
       <thead><tr><th>${esc(t('col.wave'))}</th><th>${esc(t('col.enemies'))}</th></tr></thead>
@@ -1910,6 +2004,7 @@ function route() {
       case 'status': content = renderStatuses(params); break;
       case 'tree': content = renderTree(params); break;
       case 'combat': content = renderCombat(); break;
+      case 'ascension': content = renderAscension(); break;
       case 'modes': content = renderModes(); break;
       case 'mode': content = renderMode(key); break;
       case 'chapter': content = renderChapter(key, params); break;

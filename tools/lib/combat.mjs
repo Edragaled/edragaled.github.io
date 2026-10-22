@@ -70,6 +70,10 @@ export function readCombatMath({ stats, status, statusQtn }, balance, onWarn = (
 
     mitigatesDefaultOnly: mitigates,
     formulaIntact: formula,
+
+    // Resistance stopped being only about debuffs in 1.3: the same roll guards
+    // the hostile effects that are not status effects at all.
+    resistsHostileEffects: /static bool ResistsHostileEffect\(/.test(statusSource),
   };
 
   if (math.defenseReference == null || math.resistFloor == null) {

@@ -48,7 +48,7 @@ export const EnvironmentDisplays = {
 
 export const RecipeCategories = ['All', 'Weapon', 'Armor', 'Secondary', 'Consumable', 'Material', 'Tool'];
 
-export const StationTypes = { 0: 'None', 1: 'Workshop', 2: 'Modern Workshop' };
+export const StationTypes = { 0: 'None', 1: 'Workshop', 2: 'Modern Workshop', 3: 'Ascended Workshop' };
 
 export const Currencies = ['Coin', 'Diamond', 'Crest', 'Nexus Fragment'];
 
@@ -74,8 +74,23 @@ export const PercentStats = new Set([
   'Cooldown Reduction', 'Knockback Reduction',
 ]);
 
+let onUnknown = () => {};
+
+/** extract.mjs hands its warning collector over, once, at startup. */
+export const reportUnknownTo = (fn) => { onUnknown = fn; };
+
 export const named = (table, value, fallback = 'Unknown') => {
   if (value == null) return fallback;
   const v = Array.isArray(table) ? table[Number(value)] : table[String(value)];
+  if (v == null) {
+    // Below the range means "unset" — EquipSlots uses -1, EnvironmentDisplays 0.
+    // Above it means the C# enum gained a member this mirror has not been told
+    // about, which is the one case worth shouting about.
+    const known = Array.isArray(table) ? table : Object.values(table);
+    const max = Array.isArray(table) ? table.length - 1 : Math.max(...Object.keys(table).map(Number));
+    if (Number(value) > max) {
+      onUnknown(`enum value ${value} is not one of [${known.join(', ')}] — shown as "${fallback}"; tools/lib/enums.mjs is out of date`);
+    }
+  }
   return v ?? fallback;
 };

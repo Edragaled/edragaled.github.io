@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pixel Chronicles Wiki</title>
 <meta name="description" content="Items, monsters, loot tables and crafting recipes for Pixel Chronicles.">
-<link rel="stylesheet" href="styles.css?v=ccc6fe6d84">
+<link rel="stylesheet" href="styles.css?v=e9035d56db">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%2314161c'/><rect x='3' y='3' width='4' height='4' fill='%23f0b32d'/><rect x='9' y='9' width='4' height='4' fill='%236fcf6f'/></svg>">
 </head>
 <body>
@@ -23,6 +23,15 @@
     <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
   </div>
 
+  <div class="topbar-end">
+    <a class="offsite" href="../">moonforge-games.com ↗</a>
+    <div class="lang">
+      <select id="lang" aria-label="Language" data-i18n-aria="lang.label"></select>
+    </div>
+    <button id="theme" class="icon-btn" type="button" aria-label="Toggle colour scheme" title="Toggle colour scheme"
+            data-i18n-aria="theme.toggle" data-i18n-title="theme.toggle"></button>
+  </div>
+
   <nav class="tabs" id="tabs">
     <a href="#/items" data-i18n="nav.items">Items</a>
     <a href="#/monsters" data-i18n="nav.monsters">Monsters</a>
@@ -34,16 +43,9 @@
     <a href="#/status" data-i18n="nav.status">Status</a>
     <a href="#/tree" data-i18n="nav.tree">Tree</a>
     <a href="#/combat" data-i18n="nav.combat">Combat</a>
+    <a href="#/ascension" data-i18n="nav.ascension">Ascension</a>
     <a href="#/modes" data-i18n="nav.modes">Modes</a>
-    <a class="offsite" href="../">moonforge-games.com ↗</a>
   </nav>
-
-  <div class="lang">
-    <select id="lang" aria-label="Language" data-i18n-aria="lang.label"></select>
-  </div>
-
-  <button id="theme" class="icon-btn" type="button" aria-label="Toggle colour scheme" title="Toggle colour scheme"
-          data-i18n-aria="theme.toggle" data-i18n-title="theme.toggle"></button>
 </header>
 
 <main id="view" aria-live="polite">
@@ -58,6 +60,6 @@
   <a href="../">moonforge-games.com</a>
 </footer>
 
-<script src="app.js?v=ccc6fe6d84"></script>
+<script src="app.js?v=e9035d56db"></script>
 </body>
 </html>

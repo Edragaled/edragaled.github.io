@@ -196,8 +196,16 @@ Scope is deliberately narrow for now. Left out, each easy to switch back on:
 | PvP and Arena modes | exist in the project but are not extracted yet |
 | Unreleased dungeons | a location with no waves anywhere excludes itself — see below |
 | Forgotten Depths | `UNRELEASED_LOCATIONS` — authored, not released |
-| The Master tier (37 items, 25 recipes, 6 sets) | `UNRELEASED_GEAR_SETS` / `UNRELEASED_MATERIALS` — see below |
-| Master adventure levels and drop column | `UNRELEASED_DIFFICULTIES` — see below |
+| Gravalon, Lunar Bear | `UNRELEASED_MONSTERS` — no pool, no wave, no loot table |
+
+### The enum mirror announces its own gaps
+
+`lib/enums.mjs` mirrors the C# enums by hand. When the game adds a member the
+mirror does not have, `named()` used to fall back silently: the Ascended Workshop
+arrived in 1.3 as `StationTypes = 3` and its 27 recipes read as station "None"
+for a whole release. It now warns whenever an index lands **above** the known range —
+below it still means "unset", which is what `EquipSlots` -1 and `EnvironmentDisplays` 0
+are for.
 
 ## What the data means
 
@@ -206,9 +214,8 @@ Scope is deliberately narrow for now. Left out, each easy to switch back on:
   not override are inherited from `Monster base.prefab`, and the generator follows
   that chain.
 - **Drop chances** are listed per difficulty exactly as stored on the loot entry,
-  one column per entry in `LOOT_DIFFICULTIES` — Normal and Hard today, because
-  Master is held back. The **Amount** column is the RNGNeeds weighted
-  distribution, e.g. `1 (80%), 2 (20%)`.
+  one column per entry in `LOOT_DIFFICULTIES` — Normal, Hard and Master. The
+  **Amount** column is the RNGNeeds weighted distribution, e.g. `1 (80%), 2 (20%)`.
 - **Only items the project actually uses are published.** An item is kept when
   something points at it — a recipe, a loot table, a building cost, a shop product,
   a quest, a tutorial step. Two kinds of reference have to be followed: most systems
@@ -399,27 +406,42 @@ the real ones at that level rather than the authored base.
 the skill tree's `_linkedNodesIds`, so it goes through `intArray`/`rawField` in
 `lib/unity-yaml.mjs` and is never taken from the parsed document.
 
-### The Master tier is held back by hand
+### Unreleased content is held back by hand
 
-Six gear sets (Adamantine, Amberwood, Savage, Supreme Steel, Titanite, Voidshard),
-the thirteen materials and bars they eat, the twenty-five crafts that make them and
-the Master adventure difficulty are finished in the project and not in players'
-hands. Nothing in the data says so — a finished set looks exactly like a live one —
-so three lists in `extract.mjs` name them: `UNRELEASED_GEAR_SETS`,
-`UNRELEASED_MATERIALS` and `UNRELEASED_DIFFICULTIES`.
+A location with no waves gives itself away, but a finished gear set looks exactly
+like a live one, so the rest is named in `extract.mjs`: `UNRELEASED_GEAR_SETS`
+and `UNRELEASED_MATERIALS` (items, and everything pointing at them),
+`UNRELEASED_DIFFICULTIES` (an adventure difficulty and its drop column),
+`UNRELEASED_MONSTERS` and `UNRELEASED_LOCATIONS`.
 
-Naming a set is enough. `pruneExcludedItems()` resolves the names to item keys and
-then everything that points at them follows: the crafts, the loot entries, the set
-bonuses, the cross-links, and the recipe count a Workshop level advertises. Nine
-monster loot tables held nothing but a Master material, so they drop out entirely
-and the monsters stop linking to them.
+Naming a gear set is enough. `pruneExcludedItems()` resolves the names to item
+keys and everything that points at them follows: the crafts, the loot entries, the
+set bonuses, the cross-links, the recipe count a workshop level advertises, and any
+loot table left with nothing in it.
 
 Every run warns about what it holds back and about any name that matches nothing, so
 the lists cannot rot and cannot be forgotten: delete a line and the content appears.
 
-> Goblin Chieftain is the one monster the hold-back leaves empty-handed. Its Strong
-> Leather drop was replaced in the project by Tribal Ring, so with Tribal Ring held
-> back it has no drop left to show.
+> **1.3 (2026-10-22) shipped the Master tier**, so the item and difficulty lists are
+> empty again. Held back today: Gravalon and the Lunar Bear, which no pool, wave or
+> loot table can give you, and Forgotten Depths.
+
+### A stage says what it does to its enemies
+
+Each stage's `CommonSettings` grants its enemies resistance and accuracy and hands
+them a talent — 15 / 30 / 45% resistance on Normal / Hard / Master, a rank III talent
+and an Arcanist V on the boss in Master. `levelRules()` publishes them, and the
+mode pages print them under each stage's header, because that resistance is the number
+the Combat tab's resist formula is actually fed.
+
+### Ascension
+
+Read like the combat maths: every number is a constant in `AscensionStats.cs` or
+`Ascension.Partial.cs`, and the two formulas that carry the system — what a tier and
+a roll are worth, what a reroll costs — are matched literally before the page quotes
+the numbers feeding them. The unlock level is the single `_levelRequired` in
+`Player Menu.prefab`; more than one and it is not published, because there would be
+no telling which is which.
 
 ### Ruins are listed too, labelled differently
 

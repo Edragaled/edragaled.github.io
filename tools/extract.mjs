@@ -66,6 +66,9 @@ const ICONS = join(OUT, 'icons');
 const SITE_ASSETS = join(SITE, 'assets');
 
 const MONSTER_ENTITIES = join(ASSETS, 'QuantumUser', 'Simulation', 'Entities', 'Monsters');
+const ASCENSION_RULES = join(ASSETS, 'Core', 'Scripts', 'Systems', 'MonsterSystem', 'PlayerMonster', 'AscensionStats.cs');
+const ASCENSION_SIM = join(ASSETS, 'QuantumUser', 'Simulation', 'Partials', 'Ascension.Partial.cs');
+const PLAYER_MENU = join(ASSETS, 'Core', 'Prefabs', 'UI', 'Windows', 'Player', 'Player Menu.prefab');
 const WORLD_RESOURCES = join(ASSETS, 'QuantumUser', 'Simulation', 'Entities', 'WorldObjects', 'WorldResources');
 const ELEMENT_ICONS = join(ASSETS, 'Resources_moved', 'UI', 'Icons', 'Elements');
 const TALENT_SCRIPTS = join(ASSETS, 'QuantumUser', 'Simulation', 'AssetTypes', 'Talents');
@@ -113,19 +116,28 @@ const EXCLUDED_SUMMON_CONFIGS = new Set(['TestEventSummonConfig']);
 const UNRELEASED_LOCATIONS = new Set(['ForgottenDepths']);
 
 /**
- * The Master tier, held back the same way and for the same reason: the gear, the
- * materials it eats, the crafts that make it and the adventure difficulty that
- * gates it all exist in the project but not in players' hands.
+ * Content finished in the project but not in players' hands. Unlike an unreleased
+ * location, which gives itself away by having no waves, this is indistinguishable
+ * from live content in the data, so it is named by hand.
  *
- * A gear set is named once and covers its pieces and its bar, so the crafts, the
- * loot entries and the set bonuses follow from `pruneExcludedItems`. A name that
- * matches nothing warns rather than passing silently, because a rename would
+ * A gear set is named once and covers its pieces and its bar; `pruneExcludedItems`
+ * resolves the names to item keys and everything pointing at them follows. A name
+ * that matches nothing warns rather than passing silently, because a rename would
  * otherwise quietly publish the content.
+ *
+ * The Master tier shipped in 1.3 (2026-10-22), which is why these are empty: the
+ * lists stay for the next batch.
  */
-const UNRELEASED_GEAR_SETS = ['adamantine', 'amberwood', 'savage', 'supreme_steel', 'titanite', 'voidshard'];
-const UNRELEASED_MATERIALS = new Set(['amber_sap', 'concentrated_venom', 'cyclops_eye', 'divine_gold',
-  'dragon_scale', 'jarl_skull', 'marsh_flesh', 'ogre_soap', 'tribal_ring', 'volcanic_carapace']);
-const UNRELEASED_DIFFICULTIES = new Set(['Master']);
+const UNRELEASED_GEAR_SETS = [];
+const UNRELEASED_MATERIALS = new Set();
+const UNRELEASED_DIFFICULTIES = new Set();
+
+/**
+ * Monsters a player can neither summon, fight nor meet. The wiki publishes a
+ * monster because something gives it to you; these have no pool, no wave and no
+ * loot table, so they are work in progress rather than content.
+ */
+const UNRELEASED_MONSTERS = new Set(['gravalon', 'lunar_bear']);
 
 /** Loot probability columns, minus any difficulty the wiki is holding back. */
 const LOOT_DIFFICULTIES = [
@@ -161,6 +173,7 @@ const NOT_EVIDENCE = [
 
 const warnings = [];
 const warn = (msg) => { warnings.push(msg); };
+E.reportUnknownTo(warn);
 
 // ---------------------------------------------------------------- filesystem
 
@@ -746,7 +759,17 @@ function lootSourceName(kind, rawName, en) {
   return en.get(`Resource/${rawName}`) ?? prettify(rawName);
 }
 
-const pct = (v) => (v == null ? null : Math.round(Number(v) * 1000) / 10);
+/**
+ * A probability as a percentage. Headline drops can be a fraction of a percent —
+ * the Void Diamond is 0.075% in Hard — and one decimal would round that to 0.1%,
+ * which is a different number, so small chances keep three.
+ */
+const pct = (v) => {
+  if (v == null) return null;
+  const percent = Number(v) * 100;
+  const decimals = percent > 0 && percent < 1 ? 3 : 1;
+  return Math.round(percent * 10 ** decimals) / 10 ** decimals;
+};
 
 /** RNGNeeds probability list -> `[{ amount, chance }]`, chance in percent. */
 function amountDistribution(count) {
@@ -758,11 +781,16 @@ function amountDistribution(count) {
 
 // ----------------------------------------------------------------- monsters
 
-/** Monster stats live on the Quantum entity prefab, mostly as prefab-variant overrides. */
+/**
+ * Monster stats live on the Quantum entity prefab, mostly as prefab-variant
+ * overrides. The prefab is found by name, and the name is matched without case:
+ * `warlockData.asset` sits next to `Warlock.prefab` and an exact match lost the
+ * Warlock's stats, skills and loot table entirely.
+ */
 function monsterPrefabIndex() {
   const index = new Map();
   for (const file of walk(MONSTER_ENTITIES, (p) => p.endsWith('.prefab'))) {
-    index.set(basename(file, '.prefab'), file);
+    index.set(basename(file, '.prefab').toLowerCase(), file);
   }
   return index;
 }
@@ -850,7 +878,7 @@ function extractMonsters({ guidIndex, quantumIndex, en, lootByQuantumGuid, appea
     const prefabName = basename(file, '.asset').replace(/Data$/, '');
     const nameKey = b._nameKey || prefabName;
     const key = b._friendlyId || prefabName;
-    const prefab = prefabs.get(prefabName);
+    const prefab = prefabs.get(prefabName.toLowerCase());
 
     let stats = {};
     if (prefab) stats = readPrefabStats(prefab, guidIndex);
@@ -864,6 +892,10 @@ function extractMonsters({ guidIndex, quantumIndex, en, lootByQuantumGuid, appea
     displayByKey.set(key, { name: displayName, icon: queueIcon(b.Icon, guidIndex, 'monsters', key) });
     keyByPrefab.set(prefabName, key);
     if (isRaidExclusiveBoss(roles)) { hidden.push(key); continue; }
+    if (UNRELEASED_MONSTERS.has(key)) {
+      warn(`monster ${key} is held back by UNRELEASED_MONSTERS — remove it there when the content ships`);
+      continue;
+    }
 
     const lootTable = stats.lootTableGuid ? lootByQuantumGuid.get(stats.lootTableGuid) : null;
     if (stats.lootTableGuid && !lootTable) {
@@ -1121,7 +1153,7 @@ const BUILDING_EFFECTS = {
 };
 
 /** Crafting stations unlock recipes instead, which the recipe data already says. */
-const STATION_OF = { workshop: 'Workshop', modern_workshop: 'Modern Workshop' };
+const STATION_OF = { workshop: 'Workshop', modern_workshop: 'Modern Workshop', ascended_workshop: 'Ascended Workshop' };
 
 function buildingEffect(key, maxLevel, recipes) {
   const station = STATION_OF[key];
@@ -1216,6 +1248,61 @@ function extractBuildings(guidIndex, en, itemsByGuid, recipes) {
 
   buildings.sort((a, b) => a.name.localeCompare(b.name));
   return buildings;
+}
+
+// ---------------------------------------------------------------- ascension
+
+/**
+ * Ascension, read the same way as the combat maths: every number is a constant in
+ * the C#, and anything whose shape has changed is reported rather than assumed.
+ *
+ * Two formulas carry the whole system — what a tier and a roll are worth, and
+ * what a reroll costs — so both are checked literally before the page quotes the
+ * numbers that feed them.
+ */
+function extractAscension() {
+  const rules = readFileSync(ASCENSION_RULES, 'utf8');
+  const sim = readFileSync(ASCENSION_SIM, 'utf8');
+
+  const read = (source, pattern, label) => {
+    const raw = pattern.exec(source)?.[1];
+    if (raw === undefined) { warn(`ascension: could not read ${label} — the tab is skipped`); return null; }
+    return Number(raw);
+  };
+
+  const a = {
+    statCount: read(sim, /const int StatCount = (\d+);/, 'the number of ascension stats'),
+    maxStat: read(sim, /const int MaxStat = (\d+);/, 'the maximum roll of one stat'),
+    maxTier: read(sim, /const int MaxTier = (\d+);/, 'the highest tier'),
+    threshold: read(rules, /const int AscendThreshold = (\d+);/, 'the ascension threshold'),
+    percentPerTier: read(rules, /const float PercentPerTier = (\d+(?:\.\d+)?)f;/, 'the percent a tier is worth'),
+    rollCosts: /BaseRollCosts = \{ ([\d, ]+) \};/.exec(rules)?.[1]
+      .split(',').map((n) => Number(n.trim())) ?? null,
+    // The tabs that hold it are gated by a plain level lock, and the player menu
+    // has exactly one — more than one and there is no telling which is which.
+    unlockLevel: null,
+  };
+  if (!a.rollCosts) warn('ascension: could not read the reroll costs — the tab is skipped');
+
+  const locks = [...readFileSync(PLAYER_MENU, 'utf8').matchAll(/_levelRequired: (\d+)/g)].map((m) => Number(m[1]));
+  if (locks.length === 1) a.unlockLevel = locks[0];
+  else warn(`ascension: Player Menu.prefab has ${locks.length} level locks, so the unlock level is not published`);
+
+  // The page describes these two sentences in words; if the code stops saying
+  // them, the words are wrong and the numbers alone would not show it.
+  const bonusShape = /FP\._1 \+ \(FP\)\(tier \* MaxStat \+ statValue\) \* (\d+) \/ (\d+);/.exec(sim);
+  if (!bonusShape) warn('ascension: GetMultiplier is no longer 1 + (tier × MaxStat + roll) × n / m — the tab is skipped');
+  else if (a.percentPerTier != null && a.maxStat != null
+    && Number(bonusShape[1]) * a.maxStat / Number(bonusShape[2]) !== a.percentPerTier / 100) {
+    // One whole tier is MaxStat steps of the scale, and must come to PercentPerTier.
+    warn(`ascension: GetMultiplier scales by ${bonusShape[1]}/${bonusShape[2]}, which is not ${a.percentPerTier}% per tier`);
+  }
+
+  const costShape = /GetRollCost\(\) => LockCount >= StatCount \? -1 : BaseRollCosts\[LockCount\] << Tier;/.test(rules);
+  if (!costShape) warn('ascension: a reroll no longer costs BaseRollCosts[locks] doubled per tier — the tab is skipped');
+
+  const complete = a.statCount && a.maxStat && a.maxTier && a.threshold && a.percentPerTier && a.rollCosts;
+  return complete && bonusShape && costShape ? a : null;
 }
 
 // ------------------------------------------------------------------- combat
@@ -1651,6 +1738,26 @@ function extractStatusEffects(guidIndex, en) {
 
 // ------------------------------------------------------------------ talents
 
+const talentKey = (b) => (b._friendlyId || b._nameKey).replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+
+/**
+ * Quantum guid -> talent key. A stage names the talent it hands its boss by
+ * guid; the key is language-independent, so the site reads the name off the
+ * talent tab it already has.
+ */
+let talentKeysByGuid = null;
+function talentKeyByGuid(guid) {
+  if (!talentKeysByGuid) {
+    talentKeysByGuid = new Map();
+    for (const { doc } of loadDocs(walk(join(SO, 'Talents'), isAsset))) {
+      const b = doc.body;
+      if (!b?._nameKey || b.Identifier?.Guid?.Value == null) continue;
+      talentKeysByGuid.set(String(b.Identifier.Guid.Value), talentKey(b));
+    }
+  }
+  return talentKeysByGuid.get(String(guid)) ?? null;
+}
+
 /**
  * Talents: the asset holds a name key and an icon, the numbers live in the
  * matching C# script, and the localized text has `{[VALUE_1]}` placeholders. All
@@ -1670,7 +1777,7 @@ function extractTalents(guidIndex, en) {
     const parsed = values.get(script);
     if (!parsed) { warn(`talent ${script} has no resolved level values — skipped`); continue; }
 
-    const key = (b._friendlyId || b._nameKey).replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+    const key = talentKey(b);
     const nameTemplate = en.get(`Talent/${b._nameKey}`);
     const descTemplate = en.get(`Talent/${b._nameKey}Description`);
     if (!descTemplate) warn(`talent ${script} has no description string`);
@@ -1896,12 +2003,37 @@ function readLevel(file, index, monstersByKey, itemsByGuid) {
     coins: [num(data.CoinMinMax?.x), num(data.CoinMinMax?.y)],
     teamSlots: num(data.ActiveTeamCount) || null,
     accessoryDrop: data.DropAccessory ? accessoryOdds(data.AccessoryDrop) : null,
+    rules: levelRules(config),
     itemDrops: data.DropItems ? itemDropPools(data.ItemDrop, itemsByGuid) : [],
     waves: (config?.Waves ?? []).map((wave, i) => ({
       index: i + 1,
       enemies: groupEnemies(wave.Enemies ?? [], monstersByKey),
     })),
   };
+}
+
+/**
+ * What a stage does to its enemies on top of their level: the resistance and
+ * accuracy every difficulty grants them, and the talent each one carries. These
+ * are the numbers the Combat tab's resist formula is fed in practice, so a stage
+ * that changes none of them says nothing.
+ */
+function levelRules(config) {
+  if (!config?.HasCommonSettings) return null;
+  const cs = config.CommonSettings ?? {};
+
+  const bossTalent = cs.BossTalent?.Id?.Value != null && String(cs.BossTalent.Id.Value) !== '0'
+    ? { talent: talentKeyByGuid(cs.BossTalent.Id.Value), level: num(cs.BossTalentLevel) || 1 }
+    : null;
+  if (bossTalent && !bossTalent.talent) warn(`a stage names boss talent guid ${cs.BossTalent.Id.Value}, which matches no talent asset`);
+
+  const rules = {
+    resistance: round4(fp(cs.Resistance?.RawValue ?? 0)),
+    accuracy: round4(fp(cs.Accuracy?.RawValue ?? 0)),
+    talentLevel: num(cs.TalentLevel) || null,
+    bossTalent: bossTalent?.talent ? bossTalent : null,
+  };
+  return rules.resistance || rules.accuracy || rules.talentLevel || rules.bossTalent ? rules : null;
 }
 
 /**
@@ -2220,8 +2352,9 @@ function extractLocalized(L, structural) {
   if (bastion) gamemodes.push(bastion);
   const skilltree = extractSkillTree(guidIndex, quantumIndex, L, itemsByGuid);
   const combat = extractCombatMath();
+  const ascension = extractAscension();
 
-  return { items, sets, tables, monsters, hidden, banners, recipes, statuses, talents, buildings, gamemodes, skilltree, combat, itemsByGuid, fileByKey };
+  return { items, sets, tables, monsters, hidden, banners, recipes, statuses, talents, buildings, gamemodes, skilltree, combat, ascension, itemsByGuid, fileByKey };
 }
 
 /**
@@ -2374,6 +2507,7 @@ function main() {
       elements: E.Elements,
       elementIcons,
       combat: p.combat,
+      ascension: p.ascension,
       hiddenBosses: p.hidden,
       unreferencedItems: [...unreferenced].sort(),
       // Deduped: the same asset problem is reported once per language pass.

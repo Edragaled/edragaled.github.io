@@ -181,7 +181,9 @@ img { image-rendering: pixelated; }
   color: var(--text-faint);
 }
 
-.tabs { display: flex; gap: 2px; flex-wrap: wrap; }
+/* Its own row, always: the tab list outgrows one line in several languages,
+   and a header that reflows differently per language is worse than two rows. */
+.tabs { display: flex; gap: 2px; flex-wrap: wrap; flex: 1 1 100%; }
 .tabs a {
   padding: 7px 12px;
   border-radius: 7px;
@@ -828,11 +830,12 @@ td.rank {
 .sep { margin: 0 6px; }
 
 @media (max-width: 760px) {
-  /* Brand + theme share the first row, then search, then the tab strip. */
+  /* Brand + controls share the first row, then search, then the tab strip. */
   .topbar { gap: 10px; padding: 10px 14px; }
   .brand { order: 1; }
-  .lang { order: 2; margin-left: auto; }
-  .icon-btn { order: 3; }
+  .topbar-end { order: 2; gap: 8px; }
+  /* The outbound link is in the footer as well; a phone header has no room. */
+  .topbar-end .offsite { display: none; }
   .search { order: 4; flex-basis: 100%; }
   .tabs { order: 5; flex-basis: 100%; justify-content: space-between; }
   .tabs a { padding: 7px 9px; }
@@ -848,5 +851,8 @@ td.rank {
 
 /* Link back out to the marketing site. Not a router tab, so it must not be
    highlighted by the aria-current logic and reads as leaving the app. */
-.tabs a.offsite { color: var(--text-faint); font-size: 13px; }
-.tabs a.offsite:hover { color: var(--text); background: var(--bg-inset); text-decoration: none; }
+/* The language picker, the outbound link and the theme button travel together:
+   when the tab row wraps, they must not be split across two lines. */
+.topbar-end { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.offsite { color: var(--text-faint); font-size: 13px; padding: 7px 10px; border-radius: 7px; }
+.offsite:hover { color: var(--text); background: var(--bg-inset); text-decoration: none; }
