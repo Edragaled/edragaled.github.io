@@ -267,6 +267,8 @@
   "combat.negated": "抵消",
   "combat.through": "实际承受",
   "combat.noteDiminishing": "防御永远达不到 100%：每一点削减的效果都比前一点略少。",
+  "combat.noteBaseDefense": "每个人都额外计入 {n} 点防御，所以曲线并非从零开始。它会随真实防御提高而减弱，到 {fade} 时完全消失。",
+  "combat.noteBaseDefenseFlat": "每个人都额外计入 {n} 点防御，所以曲线并非从零开始。",
   "combat.noteDot": "只有普通命中会被减免。灼烧、流血和中毒完全无视防御。",
   "combat.noteScale": "在此之上，所有伤害类型还会乘以全局 ×{n}。",
   "combat.noteReduction": "{stat} 是独立的，在防御之后最后结算。",

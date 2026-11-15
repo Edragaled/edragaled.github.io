@@ -267,6 +267,8 @@
   "combat.negated": "Abgewehrt",
   "combat.through": "Kommt durch",
   "combat.noteDiminishing": "Verteidigung erreicht nie 100%: jeder Punkt nimmt etwas weniger weg als der vorige.",
+  "combat.noteBaseDefense": "Jeder zählt zusätzlich {n} Verteidigung zur eigenen, deshalb beginnt die Kurve nicht bei null. Sie verblasst, während die echte Verteidigung wächst, und ist bei {fade} weg.",
+  "combat.noteBaseDefenseFlat": "Jeder zählt zusätzlich {n} Verteidigung zur eigenen, deshalb beginnt die Kurve nicht bei null.",
   "combat.noteDot": "Nur gewöhnliche Treffer werden gemindert. Brand, Blutung und Gift ignorieren die Verteidigung vollständig.",
   "combat.noteScale": "Darüber hinaus wird auf jede Schadensart ein globales ×{n} angewandt.",
   "combat.noteReduction": "{stat} ist davon getrennt und wirkt zuletzt, nach der Verteidigung.",

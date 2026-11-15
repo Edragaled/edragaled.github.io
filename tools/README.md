@@ -502,12 +502,21 @@ out of `CombatBalanceConfig`.
 
 **Mitigation.** `damage *= reference / (reference + defense)`. The yardstick is
 `Lerp(DefenseReference, attackerAttack, AttackWeight)`, and the asset currently
-sets `AttackWeight: 0`, so the yardstick is the fixed `DefenseReference` (400)
-and mitigation depends only on the defender. That is worth knowing before reading
+sets `AttackWeight: 0`, so the yardstick is the fixed `DefenseReference` (800 since
+1.4) and mitigation depends only on the defender. That is worth knowing before reading
 the page: at `AttackWeight: 1` it reverts to the historical
 `attack² / (attack + defense)`, where the same Defense is near-immunity against a
 weak attacker and worthless against a strong one — and the page then says so
 instead, through a different string.
+
+**And a base Defense, since 1.4.** Every fighter counts as having `BaseDefense` on
+top of its own, fading quadratically to nothing at `BaseDefenseFadeOut` — 171 fading
+out at 800 today. It is added before anything else touches Defense, so the curve
+starts at 17.6% rather than zero and the two halves join at 800 without a kink.
+Missing it made the published curve wrong by up to 17 points exactly where it is
+steepest, so both halves are shape-checked: the addition in `ComputeDamage` and the
+quadratic fade in `GetBaseDefense`. If either moves, the knobs are dropped rather
+than applied the wrong way round, and the page falls back to the plain curve.
 
 Only `DamageTypes.Default` goes through mitigation at all; burn, bleed and poison
 skip it. `DamageReduction` is separate and applies last, with a floor of 1 damage.

@@ -267,6 +267,8 @@
   "combat.negated": "Bị chặn",
   "combat.through": "Lọt qua",
   "combat.noteDiminishing": "Phòng thủ không bao giờ đạt 100%: mỗi điểm chặn được ít hơn điểm trước một chút.",
+  "combat.noteBaseDefense": "Ai cũng được tính thêm {n} Phòng thủ ngoài của mình, nên đường cong không bắt đầu từ 0. Nó mờ dần khi Phòng thủ thật tăng lên và biến mất ở {fade}.",
+  "combat.noteBaseDefenseFlat": "Ai cũng được tính thêm {n} Phòng thủ ngoài của mình, nên đường cong không bắt đầu từ 0.",
   "combat.noteDot": "Chỉ đòn thường mới bị giảm. Bỏng, chảy máu và độc bỏ qua Phòng thủ hoàn toàn.",
   "combat.noteScale": "Trên hết còn một hệ số chung ×{n} áp cho mọi loại sát thương.",
   "combat.noteReduction": "{stat} là riêng biệt và áp cuối cùng, sau Phòng thủ.",

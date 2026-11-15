@@ -267,6 +267,8 @@
   "combat.negated": "Annulé",
   "combat.through": "Passe",
   "combat.noteDiminishing": "La Défense n’atteint jamais 100 % : chaque point retire un peu moins que le précédent.",
+  "combat.noteBaseDefense": "Tout le monde compte {n} de Défense en plus de la sienne, c’est pourquoi la courbe ne part pas de zéro. Elle s’estompe à mesure que la vraie Défense monte et disparaît à {fade}.",
+  "combat.noteBaseDefenseFlat": "Tout le monde compte {n} de Défense en plus de la sienne, c’est pourquoi la courbe ne part pas de zéro.",
   "combat.noteDot": "Seuls les coups ordinaires sont atténués. Brûlure, saignement et poison ignorent totalement la Défense.",
   "combat.noteScale": "Un ×{n} global s’applique ensuite à tous les types de dégâts.",
   "combat.noteReduction": "{stat} est distincte et s’applique en dernier, après la Défense.",

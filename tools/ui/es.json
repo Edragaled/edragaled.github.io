@@ -267,6 +267,8 @@
   "combat.negated": "Anulado",
   "combat.through": "Pasa",
   "combat.noteDiminishing": "La Defensa nunca llega al 100 %: cada punto quita un poco menos que el anterior.",
+  "combat.noteBaseDefense": "Todo el mundo cuenta con {n} de Defensa además de la suya, por eso la curva no parte de cero. Se desvanece a medida que sube la Defensa real y desaparece en {fade}.",
+  "combat.noteBaseDefenseFlat": "Todo el mundo cuenta con {n} de Defensa además de la suya, por eso la curva no parte de cero.",
   "combat.noteDot": "Solo se mitigan los golpes normales. Quemadura, sangrado y veneno ignoran por completo la Defensa.",
   "combat.noteScale": "Después se aplica un ×{n} global a todos los tipos de daño.",
   "combat.noteReduction": "{stat} es aparte y se aplica en último lugar, tras la Defensa.",

@@ -267,6 +267,8 @@
   "combat.negated": "경감",
   "combat.through": "관통",
   "combat.noteDiminishing": "방어력은 결코 100%에 닿지 않습니다. 1포인트가 깎는 양은 갈수록 조금씩 줄어듭니다.",
+  "combat.noteBaseDefense": "누구나 자신의 방어력에 더해 {n}의 방어력을 가진 것으로 계산되므로 곡선이 0에서 시작하지 않습니다. 실제 방어력이 오를수록 줄어들어 {fade}에서 사라집니다.",
+  "combat.noteBaseDefenseFlat": "누구나 자신의 방어력에 더해 {n}의 방어력을 가진 것으로 계산되므로 곡선이 0에서 시작하지 않습니다.",
   "combat.noteDot": "경감되는 것은 일반 공격뿐입니다. 화상, 출혈, 중독은 방어력을 완전히 무시합니다.",
   "combat.noteScale": "여기에 더해 모든 피해 종류에 전역 ×{n}이 적용됩니다.",
   "combat.noteReduction": "{stat}은 별개이며 방어력 다음, 마지막에 적용됩니다.",

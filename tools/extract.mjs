@@ -1402,6 +1402,7 @@ function extractCombatMath() {
     stats: join(ASSETS, 'QuantumUser', 'Simulation', 'Partials', 'Stats.Partial.cs'),
     status: join(ASSETS, 'QuantumUser', 'Simulation', 'Systems', 'Combat', 'StatusUtility.cs'),
     statusQtn: join(ASSETS, 'QuantumUser', 'Simulation', 'QTN', 'Combat', 'StatusEffect.qtn'),
+    balanceSource: join(ASSETS, 'QuantumUser', 'Simulation', 'AssetTypes', 'Combat', 'CombatBalanceConfig.cs'),
   }, balance, warn);
 }
 

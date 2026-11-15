@@ -268,6 +268,8 @@
   "combat.negated": "Negated",
   "combat.through": "Gets through",
   "combat.noteDiminishing": "Defense never reaches 100%: each point removes a little less than the one before it.",
+  "combat.noteBaseDefense": "Everyone counts as having {n} Defense on top of their own, which is why the curve does not start at zero. It fades as real Defense grows and is gone at {fade}.",
+  "combat.noteBaseDefenseFlat": "Everyone counts as having {n} Defense on top of their own, which is why the curve does not start at zero.",
   "combat.noteDot": "Only ordinary hits are mitigated. Burn, bleed and poison ignore Defense entirely.",
   "combat.noteScale": "A global ×{n} is applied to every kind of damage on top of this.",
   "combat.noteReduction": "{stat} is separate and applies last, after Defense.",

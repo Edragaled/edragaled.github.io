@@ -267,6 +267,8 @@
   "combat.negated": "軽減",
   "combat.through": "通過",
   "combat.noteDiminishing": "防御が 100% に達することはありません。1 ポイントごとの効果は少しずつ小さくなります。",
+  "combat.noteBaseDefense": "誰もが自分の防御に加えて{n}の防御を持つものとして扱われるため、曲線はゼロから始まりません。実際の防御が上がるにつれて薄れ、{fade}でなくなります。",
+  "combat.noteBaseDefenseFlat": "誰もが自分の防御に加えて{n}の防御を持つものとして扱われるため、曲線はゼロから始まりません。",
   "combat.noteDot": "軽減されるのは通常の攻撃だけです。火傷・出血・毒は防御を完全に無視します。",
   "combat.noteScale": "この上に、全ダメージ種別へ共通の ×{n} がかかります。",
   "combat.noteReduction": "{stat} は別枠で、防御のあとに最後に適用されます。",

@@ -39,7 +39,7 @@ function constant(source, pattern, label, onWarn) {
  * `{ defenseReference, damageScale, resistFloor, … }`, or null if the pieces the
  * page is built from are not all there.
  */
-export function readCombatMath({ stats, status, statusQtn }, balance, onWarn = () => {}) {
+export function readCombatMath({ stats, status, statusQtn, balanceSource }, balance, onWarn = () => {}) {
   const statsSource = readFileSync(stats, 'utf8');
   const statusSource = readFileSync(status, 'utf8');
 
@@ -51,11 +51,24 @@ export function readCombatMath({ stats, status, statusQtn }, balance, onWarn = (
   const formula = /return reference \/ \(reference \+ defense\);/.test(statsSource);
   if (!formula) onWarn('combat maths: the mitigation formula is no longer reference / (reference + defense)');
 
+  // The base defense is added to Defense before anything else touches it, and
+  // fades quadratically. Both halves are checked: a linear fade, or an addition
+  // that moved, would make the published curve wrong exactly where it is steepest.
+  const addsBase = /defense \+= balance.GetBaseDefense\(defense\);/.test(statsSource);
+  const fadeSource = readFileSync(balanceSource, 'utf8');
+  const fade = /remaining = FPMath.Clamp01\(FP._1 - defense \/ BaseDefenseFadeOut\);\s*return BaseDefense \* remaining \* remaining;/.test(fadeSource);
+  if (!addsBase) onWarn('combat maths: ComputeDamage no longer adds the base defense — the curve ignores it');
+  if (!fade) onWarn('combat maths: the base defense no longer fades quadratically — the curve ignores it');
+
   const math = {
     // Tuning knobs, from the asset.
     attackWeight: fpValue(balance?.AttackWeight),
     defenseReference: fpValue(balance?.DefenseReference),
     damageScale: fpValue(balance?.DamageScale),
+    // Defense everyone counts as having, fading out as real Defense grows: with
+    // a fixed yardstick an unequipped fighter would otherwise mitigate nothing.
+    baseDefense: fpValue(balance?.BaseDefense),
+    baseDefenseFadeOut: fpValue(balance?.BaseDefenseFadeOut),
 
     // Constants, from the simulation.
     // Two shapes in the wild: the multiplier assigned inline, or returned from a
@@ -70,6 +83,7 @@ export function readCombatMath({ stats, status, statusQtn }, balance, onWarn = (
 
     mitigatesDefaultOnly: mitigates,
     formulaIntact: formula,
+    baseDefenseIntact: addsBase && fade,
 
     // Resistance stopped being only about debuffs in 1.3: the same roll guards
     // the hostile effects that are not status effects at all.
@@ -80,6 +94,10 @@ export function readCombatMath({ stats, status, statusQtn }, balance, onWarn = (
     onWarn('combat maths: the core figures are missing — the combat page is skipped');
     return null;
   }
+
+  // A fade that no longer matches is reported above; the knobs are then dropped
+  // rather than applied the wrong way round.
+  if (!math.baseDefenseIntact) { math.baseDefense = null; math.baseDefenseFadeOut = null; }
 
   // The yardstick is a lerp between the fixed reference and the attacker's own
   // attack; at weight 0 it is the reference alone, which makes mitigation depend

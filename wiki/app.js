@@ -1089,16 +1089,31 @@ const curveX = (defense) => CURVE.left + (defense / DEFENSE_MAX) * (CURVE.w - CU
 const curveY = (share) => CURVE.h - CURVE.bottom - share * (CURVE.h - CURVE.top - CURVE.bottom);
 
 /** The share of an ordinary hit that Defense removes, straight from the sim. */
-const negatedShare = (defense, reference) => (reference + defense <= 0 ? 0 : defense / (reference + defense));
+/**
+ * Defense everyone counts as having on top of their own, so an unequipped
+ * fighter still mitigates part of a hit. It fades quadratically and is gone by
+ * `baseDefenseFadeOut`, which is what keeps the curve from kinking where it ends.
+ */
+const withBaseDefense = (defense, c) => {
+  if (!c?.baseDefense) return defense;
+  if (!c.baseDefenseFadeOut) return defense + c.baseDefense;
+  const remaining = Math.min(1, Math.max(0, 1 - defense / c.baseDefenseFadeOut));
+  return defense + c.baseDefense * remaining * remaining;
+};
+
+const negatedShare = (defense, reference, c) => {
+  const total = withBaseDefense(defense, c);
+  return reference + total <= 0 ? 0 : total / (reference + total);
+};
 
 /**
  * The mitigation curve, drawn once. Its shape is the whole point: the climb is
  * steep at first and never reaches the top, which a row of numbers hides.
  */
-function defenseCurve(ref) {
+function defenseCurve(ref, c) {
   const points = [];
   for (let d = 0; d <= DEFENSE_MAX; d += DEFENSE_MAX / 200) {
-    points.push(`${d === 0 ? 'M' : 'L'}${curveX(d).toFixed(1)} ${curveY(negatedShare(d, ref)).toFixed(1)}`);
+    points.push(`${d === 0 ? 'M' : 'L'}${curveX(d).toFixed(1)} ${curveY(negatedShare(d, ref, c)).toFixed(1)}`);
   }
 
   const grid = [0, 0.25, 0.5, 0.75, 1].map((share) => `
@@ -1153,7 +1168,7 @@ function renderCombat() {
         <input id="hit" type="range" min="50" max="5000" step="50" value="1000">
         <output id="hit-out" class="calc-value">1 000</output>
       </label>
-      <div class="curve-wrap">${defenseCurve(ref)}</div>
+      <div class="curve-wrap">${defenseCurve(ref, c)}</div>
       <p class="curve-hint">${esc(t('combat.curveHint'))}</p>
       <div class="calc-result">
         <div><b id="negated">—</b><span>${esc(t('combat.negated'))}</span></div>
@@ -1164,11 +1179,14 @@ function renderCombat() {
 
     <div class="table-wrap"><table>
       <thead><tr><th class="num">${esc(lb('stat', 'Defense'))}</th><th class="num">${esc(t('combat.negated'))}</th></tr></thead>
-      <tbody>${DEFENSE_SAMPLES.map((d) => `<tr><td class="num">${nf(d)}</td><td class="num">${pct(negatedShare(d, ref))}</td></tr>`).join('')}</tbody>
+      <tbody>${DEFENSE_SAMPLES.map((d) => `<tr><td class="num">${nf(d)}</td><td class="num">${pct(negatedShare(d, ref, c))}</td></tr>`).join('')}</tbody>
     </table></div>
 
     <ul class="status-effects combat-notes">
       <li>${esc(t('combat.noteDiminishing'))}</li>
+      ${c.baseDefense ? `<li>${esc(c.baseDefenseFadeOut
+    ? t('combat.noteBaseDefense', { n: nf(c.baseDefense), fade: nf(c.baseDefenseFadeOut) })
+    : t('combat.noteBaseDefenseFlat', { n: nf(c.baseDefense) }))}</li>` : ''}
       <li>${esc(t('combat.noteDot'))}</li>
       ${c.damageScale && c.damageScale !== 1 ? `<li>${esc(t('combat.noteScale', { n: c.damageScale }))}</li>` : ''}
       <li>${esc(t('combat.noteReduction', { stat: lb('stat', 'Damage Reduction') }))}</li>
@@ -1426,7 +1444,7 @@ function wireCombat(root, c) {
   const refreshDefense = () => {
     const d = Number(el.def.value);
     const raw = Number(el.hit.value);
-    const share = negatedShare(d, ref);
+    const share = negatedShare(d, ref, c);
     el['def-out'].textContent = nf(d);
     el['hit-out'].textContent = nf(raw);
     el.negated.textContent = pct(share);
@@ -1434,7 +1452,8 @@ function wireCombat(root, c) {
     el.through.textContent = nf(Math.max(1, Math.round(raw * (1 - share))));
     // Ungrouped on purpose: "3.000" inside a formula reads as three wherever the
     // locale groups with a dot.
-    el['def-formula'].textContent = `${ref} / (${ref} + ${d}) = ${pct(1 - share)}`;
+    const total = Math.round(withBaseDefense(d, c));
+    el['def-formula'].textContent = `${ref} / (${ref} + ${total}) = ${pct(1 - share)}`;
 
     const x = curveX(d);
     const y = curveY(share);
