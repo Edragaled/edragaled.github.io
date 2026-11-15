@@ -397,6 +397,7 @@ function renderItemDetail(key) {
           ${i.slot ? `<span class="badge">${esc(lb('slot', i.slot))}</span>` : ''}
           ${i.maxStack > 1 ? `<span class="badge">${esc(t('item.stacks', { n: nf(i.maxStack) }))}</span>` : ''}
           ${i.upgradable && i.slot ? `<span class="badge">${esc(t('item.upgradable'))}</span>` : ''}
+          ${i.sellPrice ? `<span class="badge">${esc(t('item.sellPrice', { n: nf(i.sellPrice) }))}</span>` : ''}
         </div>
       </div>
     </div>
@@ -821,9 +822,18 @@ function subRecipesPanel(r) {
 }
 
 function renderSets() {
+  // 1.4 emptied every set's StatSetEffects: the sets still say which pieces go
+  // together, the bonuses moved to rune sets. Read from the payload rather than
+  // assumed, so putting one back needs no code change here.
+  const hasBonuses = DB.sets.some((s) => s.bonuses.length);
+
   const frag = el(`<div>
     <h1>${esc(t('sets.title'))}</h1>
-    <p class="subtitle">${esc(t('sets.subtitle', { n: nf(DB.sets.length) }))}</p>
+    <p class="subtitle">${esc(hasBonuses
+    ? t('sets.subtitle', { n: nf(DB.sets.length) })
+    : t('sets.subtitleNoBonus', { n: nf(DB.sets.length) }))}</p>
+    ${hasBonuses ? '' : `<p class="empty-note">${esc(t('sets.movedToRunes'))}
+      <a href="#/runes">${esc(t('nav.runes'))} →</a></p>`}
     <div class="panels" id="list"></div>
   </div>`);
 
@@ -833,8 +843,8 @@ function renderSets() {
       ${s.pieces.map((p) => `<li>${pieceRow(p)}</li>`).join('')}
       ${s.associatedWeapon ? `<li>${pieceRow(s.associatedWeapon)}</li>` : ''}
     </ul>
-    <h3 style="margin-top:14px">${esc(t('item.setBonus'))}</h3>
-    <dl class="stats">${s.bonuses.map((b) => `<div><dt>${esc(lb('stat', b.stat))}</dt><dd>+${nf(b.value)}${b.unit === '%' ? '%' : ''}</dd></div>`).join('')}</dl>
+    ${s.bonuses.length ? `<h3 style="margin-top:14px">${esc(t('item.setBonus'))}</h3>
+    <dl class="stats">${s.bonuses.map((b) => `<div><dt>${esc(lb('stat', b.stat))}</dt><dd>+${nf(b.value)}${b.unit === '%' ? '%' : ''}</dd></div>`).join('')}</dl>` : ''}
   </section>`)));
   return frag;
 }
@@ -1211,6 +1221,124 @@ function renderCombat() {
 }
 
 /**
+ * Runes. A rune is rolled onto a piece, not slotted into it, so the page is
+ * built around the two draws that decide what you get — how many enchantments,
+ * then each one's level — followed by the catalogue they are drawn from.
+ */
+function renderRunes() {
+  const e = DB.meta?.enchantments;
+  if (!e) return el(`<div><h1>${esc(t('runes.title'))}</h1><p class="empty-note">${esc(t('runes.empty'))}</p></div>`);
+
+  const levels = Array.from({ length: e.maxLevel }, (_, i) => i + 1);
+  const rarities = DB.meta.rarities.slice(0, e.countOdds.length);
+  const poolLabel = (pool) => ({
+    Armor: t('runes.poolArmor'),
+    Offense: t('runes.poolAny'),
+    Helmet: lb('slot', 'Helmet'),
+    Chestplate: lb('slot', 'Chestplate'),
+    Boots: lb('slot', 'Boots'),
+    Weapon: lb('slot', 'Main Hand'),
+  }[pool] ?? pool);
+
+  // Catalogue order, which already groups a pool together; the first sighting of
+  // each pool opens its block.
+  const pools = [];
+  for (const enchantment of e.enchantments) {
+    const last = pools[pools.length - 1];
+    if (last && last.pool === enchantment.pool) last.rows.push(enchantment);
+    else pools.push({ pool: enchantment.pool, rows: [enchantment] });
+  }
+
+  const trios = [...new Set(e.enchantments.filter((x) => x.trio).map((x) => x.trio))]
+    .map((trio) => e.enchantments.filter((x) => x.trio === trio).map((x) => x.name).join(' / '));
+
+  // The sentence keeps its placeholder: one enchantment is five values, and the
+  // columns are where they live.
+  const sentence = (text) => esc(text.replace(/\{value\}/g, 'n'));
+
+  const bonusLine = (bonus) => (bonus.text
+    ? esc(bonus.text)
+    : esc(t('runes.statBonus', { stat: lb('stat', bonus.stat), n: nf(bonus.percent) })));
+
+  const frag = el(`<div>
+    <h1>${esc(t('runes.title'))}</h1>
+    <p class="subtitle">${esc(t('runes.subtitle', { n: e.maxPerPiece }))}</p>
+
+    <h2>${esc(t('runes.roll'))}</h2>
+    <p class="empty-note">${esc(t('runes.rollNote'))}</p>
+
+    <div class="panels">
+      <div><h3>${esc(t('runes.byRarity'))}</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>${esc(t('col.rarity'))}</th>${e.countOdds[0]
+    .map((_, i) => `<th class="num">${esc(tn('runes.nEnchantments', i + 1))}</th>`).join('')}</tr></thead>
+          <tbody>${rarities.map((rarity, i) => `<tr>
+            <td>${rarityBadge(rarity)}</td>
+            ${e.countOdds[i].map((odds) => `<td class="num">${chanceCell(odds)}</td>`).join('')}
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>
+      <div><h3>${esc(t('runes.byTier'))}</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>${esc(t('col.tier'))}</th>${levels
+    .map((l) => `<th class="num">${esc(roman(l))}</th>`).join('')}</tr></thead>
+          <tbody>${e.levelOdds.map((row, i) => `<tr>
+            <td class="rank">${esc(t('mode.tierN', { n: i + 1 }))}</td>
+            ${row.map((odds) => `<td class="num">${chanceCell(odds)}</td>`).join('')}
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <ul class="status-effects combat-notes">
+      <li>${esc(t('runes.topLevel', { level: roman(e.maxLevel), worth: roman(e.topLevelWorth) }))}</li>
+      ${trios.length ? `<li>${esc(t('runes.trios', { trios: trios.join(' · ') }))}</li>` : ''}
+      <li>${esc(t('runes.keepOne'))}</li>
+      ${e.maxConditionalReduction ? `<li>${esc(t('runes.reductionCap', { n: nf(e.maxConditionalReduction) }))}</li>` : ''}
+    </ul>
+
+    ${e.costs?.unlock ? `<h2>${esc(t('runes.costs'))}</h2>
+    <ul class="status-effects combat-notes">
+      <li>${esc(t('runes.costUnlock', { n: nf(e.costs.unlock) }))}</li>
+      <li>${esc(t('runes.costRune', {
+    low: nf(e.costs.perTier[0]), high: nf(e.costs.perTier[e.costs.perTier.length - 1]),
+  }))}</li>
+      ${e.costs.book ? `<li>${esc(t('runes.costBook', { n: nf(e.costs.book) }))}</li>` : ''}
+    </ul>` : ''}
+
+    <h2>${esc(t('runes.sets'))}</h2>
+    <p class="empty-note">${esc(t('runes.setsNote', { n: e.setPieces }))}</p>
+    <div class="status-list">${e.sets.map((set) => `<section class="status">
+      <div class="status-body">
+        <span class="status-name">${esc(set.name)}</span>
+        <ul class="ingredients">${set.bonuses.map((bonus) => `<li>
+          <span>(${bonus.pieces}) ${bonusLine(bonus)}</span>
+        </li>`).join('')}</ul>
+      </div>
+    </section>`).join('')}</div>
+
+    <h2>${esc(t('runes.list', { n: e.enchantments.length }))}</h2>
+    <p class="empty-note">${esc(t('runes.listNote'))}</p>
+    ${pools.map((group) => `
+      <h3>${esc(poolLabel(group.pool))}</h3>
+      <div class="table-wrap"><table>
+        <thead><tr>
+          <th>${esc(t('runes.colEnchantment'))}</th>
+          <th>${esc(t('runes.colEffect'))}</th>
+          ${levels.map((l) => `<th class="num">${esc(roman(l))}</th>`).join('')}
+        </tr></thead>
+        <tbody>${group.rows.map((row) => `<tr>
+          <td>${esc(row.name)}${row.stat ? ` <span class="skill-kind">${esc(lb('stat', row.stat))}</span>` : ''}</td>
+          <td>${sentence(row.description)}</td>
+          ${row.levels.map((l) => `<td class="num">${nf(l.value)}</td>`).join('')}
+        </tr>`).join('')}</tbody>
+      </table></div>`).join('')}
+  </div>`);
+
+  return frag;
+}
+
+/**
  * Ascension. Three numbers do all the work — what a point is worth, what it takes
  * to ascend, what a reroll costs — so the page is two small tables around them
  * rather than prose a reader has to total up by hand.
@@ -1233,7 +1361,7 @@ function renderAscension() {
   return el(`<div>
     <h1>${esc(t('ascension.title'))}</h1>
     <p class="subtitle">${esc(t('ascension.subtitle', { stats: stats.map((s) => lb('stat', s)).join(', ') }))}</p>
-    ${a.unlockLevel ? `<p class="empty-note">${esc(t('ascension.unlock', { n: nf(a.unlockLevel) }))}</p>` : ''}
+    ${a.unlock ? `<p class="empty-note">${esc(modeUnlockText(a.unlock))}</p>` : ''}
 
     <h2>${esc(t('ascension.bonus'))}</h2>
     <p class="empty-note">${esc(t('ascension.bonusNote', { n: a.statCount, max: nf(a.maxStat), per: nf(per) }))}</p>
@@ -1599,6 +1727,19 @@ function renderModes() {
   return frag;
 }
 
+/**
+ * How a mode opens. 1.4 moved every one off the player's level onto the
+ * adventure, so the sentence names the chapter the way the Adventure tab does.
+ */
+function modeUnlockText(unlock) {
+  if (!unlock) return '';
+  const chapters = DB.gamemodes.find((m) => m.key === 'adventure')?.groups ?? [];
+  const chapter = chapters[unlock.chapter - 1]?.name ?? t('mode.chapterN', { n: unlock.chapter });
+  return unlock.level == null
+    ? t('mode.unlockLast', { chapter, difficulty: lb('difficulty', unlock.difficulty) })
+    : t('mode.unlockLevel', { chapter, n: unlock.level, difficulty: lb('difficulty', unlock.difficulty) });
+}
+
 /** Bastion has no levels to count — it is endless by construction. */
 const modeSummary = (m) => (m.kind === 'endless'
   ? t('bastion.endless')
@@ -1623,6 +1764,7 @@ function renderMode(key) {
       </div>
     </div>
     ${mode.blurb ? `<p class="subtitle" style="margin-top:18px">${esc(mode.blurb)}</p>` : ''}
+    ${mode.unlock ? `<p class="empty-note">${esc(modeUnlockText(mode.unlock))}</p>` : ''}
     <div class="grid" id="list"></div>
   </div>`);
 
@@ -1778,6 +1920,19 @@ function dropPanels(l) {
         <div><h3>${esc(t('col.tier'))}</h3><dl class="stats">${l.accessoryDrop.tiers.map((row) => `
           <div><dt>${esc(t('mode.tierN', { n: row.tier }))}</dt><dd>${row.chance}%</dd></div>`).join('')}</dl></div>
         <div><h3>${esc(t('col.rarity'))}</h3><dl class="stats">${l.accessoryDrop.rarities.map((r) => `
+          <div><dt><span class="rarity-text r-${cls(r.rarity)}">${esc(lb('rarity', r.rarity))}</span></dt><dd>${r.chance}%</dd></div>`).join('')}</dl></div>
+      </div>
+    </section>`);
+  }
+
+  if (l.runeDrop) {
+    parts.push(`<section class="panel" style="margin-bottom:12px">
+      <h3>${esc(t('mode.runeRoll'))}</h3>
+      <p class="empty-note" style="margin-bottom:11px">${esc(t('mode.runeNote'))}</p>
+      <div class="panels">
+        <div><h3>${esc(t('col.tier'))}</h3><dl class="stats">${l.runeDrop.tiers.map((row) => `
+          <div><dt>${esc(t('mode.tierN', { n: row.tier }))}</dt><dd>${row.chance}%</dd></div>`).join('')}</dl></div>
+        <div><h3>${esc(t('col.rarity'))}</h3><dl class="stats">${l.runeDrop.rarities.map((r) => `
           <div><dt><span class="rarity-text r-${cls(r.rarity)}">${esc(lb('rarity', r.rarity))}</span></dt><dd>${r.chance}%</dd></div>`).join('')}</dl></div>
       </div>
     </section>`);
@@ -2005,6 +2160,7 @@ function route() {
       case 'tree': content = renderTree(params); break;
       case 'combat': content = renderCombat(); break;
       case 'ascension': content = renderAscension(); break;
+      case 'runes': content = renderRunes(); break;
       case 'modes': content = renderModes(); break;
       case 'mode': content = renderMode(key); break;
       case 'chapter': content = renderChapter(key, params); break;

@@ -195,8 +195,7 @@ Scope is deliberately narrow for now. Left out, each easy to switch back on:
 | Event summon banners | skipped in `extractSummons()` — limited-time, so not static data |
 | PvP and Arena modes | exist in the project but are not extracted yet |
 | Unreleased dungeons | a location with no waves anywhere excludes itself — see below |
-| Forgotten Depths | `UNRELEASED_LOCATIONS` — authored, not released |
-| Gravalon, Lunar Bear | `UNRELEASED_MONSTERS` — no pool, no wave, no loot table |
+| Lunar Bear | `UNRELEASED_MONSTERS` — no pool, no wave, no loot table |
 
 ### The enum mirror announces its own gaps
 
@@ -206,6 +205,13 @@ arrived in 1.3 as `StationTypes = 3` and its 27 recipes read as station "None"
 for a whole release. It now warns whenever an index lands **above** the known range —
 below it still means "unset", which is what `EquipSlots` -1 and `EnvironmentDisplays` 0
 are for.
+
+### Armour sets have no bonus any more
+
+1.4 emptied every `ItemSetData.StatSetEffects`: the bonuses moved to rune sets. The
+Sets tab reads that from the payload rather than being told — no set with a bonus
+means the page drops the bonus block, changes its subtitle and points at the Runes
+tab, and putting one bonus back brings all of it back with no code change.
 
 ## What the data means
 
@@ -422,9 +428,10 @@ loot table left with nothing in it.
 Every run warns about what it holds back and about any name that matches nothing, so
 the lists cannot rot and cannot be forgotten: delete a line and the content appears.
 
-> **1.3 (2026-10-22) shipped the Master tier**, so the item and difficulty lists are
-> empty again. Held back today: Gravalon and the Lunar Bear, which no pool, wave or
-> loot table can give you, and Forgotten Depths.
+> **1.4 (2026-11-15) shipped the runes**, and with them Forgotten Depths and its boss
+> Gravalon, so those lists emptied too. Held back today: the Lunar Bear alone, which
+> no pool, wave or loot table can give you. (It is not Lunadrya — that is a different
+> monster, and it is live.)
 
 ### A stage says what it does to its enemies
 
@@ -433,6 +440,41 @@ them a talent — 15 / 30 / 45% resistance on Normal / Hard / Master, a rank III
 and an Arcanist V on the boss in Master. `levelRules()` publishes them, and the
 mode pages print them under each stage's header, because that resistance is the number
 the Combat tab's resist formula is actually fed.
+
+### Runes and enchantments
+
+Read like the combat maths, from two files the game itself treats as the one source:
+`EnchantmentCatalog.cs` in the simulation (what each of the 29 enchantments does,
+the trios, the six sets) and `ItemEnchantments.cs` in the client (what a rune rolls,
+what enchanting costs). Names and sentences come from the sheet, under
+`Item/Enchant/` and `Item/RuneSet/`.
+
+Two shapes are checked literally before the page quotes the numbers that feed them:
+that `PerLevel` is still hundredths of a percent, and that `Worth()` still makes the
+top level count as one more — the whole reason a V is worth hunting, and the reason
+the last column of every table is not simply five times the first.
+
+The page keeps the `{value}` placeholder in each sentence and prints the five values
+beside it, because one enchantment is five numbers and baking one of them in would
+pick a level for the reader.
+
+### Items the server mints by name
+
+A rune's id is `{rarity}_{piece}_rune`, an enchanted book's is `{piece}_book`: the
+dungeon's rune drop and the forge's roll build them from a name, so no asset holds
+their guid and the reference scan condemned ten of the twenty runes while keeping the
+other ten — whichever happened to be named somewhere. `SERVER_MINTED_ITEMS` rescues
+those families by pattern, and warns if a pattern stops matching any item at all.
+
+### How a mode opens
+
+1.4 moved every mode off the player's level onto adventure progress, as a
+`ChapterLevelButtonLock` on the button itself — five copies across the project, with
+no shared constant. `readChapterLocks()` reads the lock, walks back to the button it
+sits on, and `UNLOCK_BUTTONS` maps that name to a mode; an unknown button name or a
+mode with no lock warns rather than publishing a guess. The Ascension tab carries its
+own copy of the same rule, so it is read from `Player Menu.prefab` rather than assumed
+to equal the raid's.
 
 ### Ascension
 

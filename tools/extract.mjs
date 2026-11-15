@@ -27,6 +27,7 @@ import { loadUiStrings } from './lib/ui-strings.mjs';
 import { readUpgradeScripts, effectsForLevel, fillUpgradeLine, PLAYER_UPGRADE_RARITIES, PLAYER_UPGRADE_CATEGORIES } from './lib/bastion.mjs';
 import { decodeLinkedIds, assignClasses, addPrerequisites, NODE_TYPES as SKILL_NODE_TYPES, GRANT_KINDS as SKILL_GRANT_KINDS } from './lib/skilltree.mjs';
 import { readCombatMath } from './lib/combat.mjs';
+import { readEnchantments } from './lib/enchantments.mjs';
 import * as E from './lib/enums.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -68,7 +69,10 @@ const SITE_ASSETS = join(SITE, 'assets');
 const MONSTER_ENTITIES = join(ASSETS, 'QuantumUser', 'Simulation', 'Entities', 'Monsters');
 const ASCENSION_RULES = join(ASSETS, 'Core', 'Scripts', 'Systems', 'MonsterSystem', 'PlayerMonster', 'AscensionStats.cs');
 const ASCENSION_SIM = join(ASSETS, 'QuantumUser', 'Simulation', 'Partials', 'Ascension.Partial.cs');
+const ENCHANTMENT_CATALOG = join(ASSETS, 'QuantumUser', 'Simulation', 'Enchantments', 'EnchantmentCatalog.cs');
+const ENCHANTMENT_CLIENT = join(ASSETS, 'Core', 'Scripts', 'UI', 'Systems', 'Item', 'ItemEnchantments.cs');
 const PLAYER_MENU = join(ASSETS, 'Core', 'Prefabs', 'UI', 'Windows', 'Player', 'Player Menu.prefab');
+const GAMEMODE_MENU = join(ASSETS, 'Core', 'Prefabs', 'UI', 'Windows', 'GameModes', 'GameMode Menu.prefab');
 const WORLD_RESOURCES = join(ASSETS, 'QuantumUser', 'Simulation', 'Entities', 'WorldObjects', 'WorldResources');
 const ELEMENT_ICONS = join(ASSETS, 'Resources_moved', 'UI', 'Icons', 'Elements');
 const TALENT_SCRIPTS = join(ASSETS, 'QuantumUser', 'Simulation', 'AssetTypes', 'Talents');
@@ -113,7 +117,7 @@ const EXCLUDED_SUMMON_CONFIGS = new Set(['TestEventSummonConfig']);
  * one in the data. Every run warns about what it holds back, so the entry cannot
  * be quietly forgotten once the content ships — delete the name and it appears.
  */
-const UNRELEASED_LOCATIONS = new Set(['ForgottenDepths']);
+const UNRELEASED_LOCATIONS = new Set();
 
 /**
  * Content finished in the project but not in players' hands. Unlike an unreleased
@@ -137,7 +141,7 @@ const UNRELEASED_DIFFICULTIES = new Set();
  * monster because something gives it to you; these have no pool, no wave and no
  * loot table, so they are work in progress rather than content.
  */
-const UNRELEASED_MONSTERS = new Set(['gravalon', 'lunar_bear']);
+const UNRELEASED_MONSTERS = new Set(['lunar_bear']);
 
 /** Loot probability columns, minus any difficulty the wiki is holding back. */
 const LOOT_DIFFICULTIES = [
@@ -162,6 +166,18 @@ const REFERENCE_ROOTS = ['Resources_moved', 'QuantumUser', 'Core', 'Resources', 
  * content the wiki already treats as dead, and dead content should not keep an
  * item alive.
  */
+/**
+ * Items no asset can hold the guid of, because the server builds their id from a
+ * name: a rune is `{rarity}_{piece}_rune`, an enchanted book `{piece}_book`. The
+ * dungeon's rune drop and the forge's roll create them, so the reference scan
+ * would condemn whole families of live items. A rule that matches no item at all
+ * warns, so a rename cannot leave it quietly rescuing nothing.
+ */
+const SERVER_MINTED_ITEMS = [
+  { pattern: /^(common|uncommon|rare|epic|legendary)_(helmet|chestplate|boots|weapon)_rune$/, reason: 'rolled by the rune drop' },
+  { pattern: /^(helmet|chestplate|boots|weapon)_book$/, reason: 'written when an enchantment roll is kept' },
+];
+
 const NOT_EVIDENCE = [
   /UnityDB\.prefab$/i,
   /[\\/]Unused[\\/]/i,
@@ -473,6 +489,8 @@ function extractItems(guidIndex, en) {
       tool: b.IsTool ? { type: E.named(E.ToolTypes, b.ToolType, 'None'), tier: num(b.ToolTier), damage: num(b.ToolDamage) } : null,
       isWeapon,
       maxStack: num(b.MaxAmount) || 1,
+      // 0 means the Shop will not buy it; the merchant tab only lists the rest.
+      sellPrice: num(b.SellPrice) || null,
       upgradable: !!b.IsUpgradable,
       maxCharges: num(b.MaxCharges) || null,
       icon: wanted ? queueIcon(b.Sprite, guidIndex, 'items', key) : null,
@@ -1250,6 +1268,68 @@ function extractBuildings(guidIndex, en, itemsByGuid, recipes) {
   return buildings;
 }
 
+// ------------------------------------------------------------------ unlocks
+
+/**
+ * What the adventure has to be at for a mode to open. 1.4 moved every mode off
+ * the player's level onto chapter progress, and the rule is a `ChapterLevelButtonLock`
+ * on the button itself — no shared constant, so each button is read where it is.
+ *
+ * Returns `{ chapter, level, difficulty }` per button name; `level` is null when
+ * the lock asks for the chapter's last level, whose number depends on difficulty.
+ */
+function readChapterLocks(file) {
+  const docs = readUnityYaml(file);
+
+  const names = new Map();
+  for (const doc of docs) if (doc.body?.m_Name != null && doc.anchor) names.set(String(doc.anchor), doc.body.m_Name);
+
+  const locks = new Map();
+  for (const doc of docs) {
+    for (const ref of doc.body?.references?.RefIds ?? []) {
+      if (ref?.type?.class !== 'ChapterLevelButtonLock') continue;
+      const owner = names.get(String(doc.body?.m_GameObject?.fileID));
+      if (!owner) { warn(`${basename(file)}: a chapter lock sits on an unnamed object — its unlock is not published`); continue; }
+      locks.set(owner, {
+        chapter: num(ref.data?._chapter) || 1,
+        level: ref.data?._lastLevel ? null : num(ref.data?._level) || 1,
+        difficulty: E.named(E.Difficulties, ref.data?._difficulty, 'Normal'),
+      });
+    }
+  }
+  return locks;
+}
+
+// Which button opens which mode. A name that is not here, or a mode with no
+// button, warns: the wiki would otherwise quietly stop saying how to get in.
+const UNLOCK_BUTTONS = {
+  'Dungeon Button': 'dungeon',
+  'Raid Buttons': 'raid',
+  'Bastion Button': 'bastion',
+  // The arena has no page of its own yet, so its lock is read and ignored.
+  'PvP Button': null,
+};
+
+function readModeUnlocks(gamemodes) {
+  const locks = readChapterLocks(GAMEMODE_MENU);
+  const byMode = new Map();
+
+  for (const [button, lock] of locks) {
+    if (!(button in UNLOCK_BUTTONS)) {
+      warn(`GameMode Menu.prefab: "${button}" is locked by a chapter but UNLOCK_BUTTONS does not know it`);
+      continue;
+    }
+    const mode = UNLOCK_BUTTONS[button];
+    if (mode) byMode.set(mode, lock);
+  }
+
+  for (const mode of gamemodes) {
+    if (mode.key === 'adventure') continue;
+    if (!byMode.has(mode.key)) { warn(`no chapter lock found for the ${mode.key} mode — its unlock is not published`); continue; }
+    mode.unlock = byMode.get(mode.key);
+  }
+}
+
 // ---------------------------------------------------------------- ascension
 
 /**
@@ -1280,13 +1360,14 @@ function extractAscension() {
       .split(',').map((n) => Number(n.trim())) ?? null,
     // The tabs that hold it are gated by a plain level lock, and the player menu
     // has exactly one — more than one and there is no telling which is which.
-    unlockLevel: null,
+    unlock: null,
   };
   if (!a.rollCosts) warn('ascension: could not read the reroll costs — the tab is skipped');
 
-  const locks = [...readFileSync(PLAYER_MENU, 'utf8').matchAll(/_levelRequired: (\d+)/g)].map((m) => Number(m[1]));
-  if (locks.length === 1) a.unlockLevel = locks[0];
-  else warn(`ascension: Player Menu.prefab has ${locks.length} level locks, so the unlock level is not published`);
+  // 1.4 moved it off the player's level onto the adventure, on the tab itself.
+  const tab = readChapterLocks(PLAYER_MENU).get('Ascension Tab');
+  if (tab) a.unlock = tab;
+  else warn('ascension: no chapter lock on the Ascension Tab of Player Menu.prefab — its unlock is not published');
 
   // The page describes these two sentences in words; if the code stops saying
   // them, the words are wrong and the numbers alone would not show it.
@@ -2003,6 +2084,9 @@ function readLevel(file, index, monstersByKey, itemsByGuid) {
     coins: [num(data.CoinMinMax?.x), num(data.CoinMinMax?.y)],
     teamSlots: num(data.ActiveTeamCount) || null,
     accessoryDrop: data.DropAccessory ? accessoryOdds(data.AccessoryDrop) : null,
+    // Same two pools as an accessory; the piece it fits is drawn evenly, which
+    // is why the rune itself names no item.
+    runeDrop: data.DropRune ? accessoryOdds(data.RuneDrop) : null,
     rules: levelRules(config),
     itemDrops: data.DropItems ? itemDropPools(data.ItemDrop, itemsByGuid) : [],
     waves: (config?.Waves ?? []).map((wave, i) => ({
@@ -2214,7 +2298,18 @@ function findUnreferencedItems(items, itemFileByKey) {
     candidates = sweepByFriendlyId(candidates, code, itemFileByKey);
   }
 
-  return new Set(candidates.map((i) => i.key));
+  // Last word: a family the server mints is obtainable even though nothing in
+  // the project names it.
+  const minted = new Set();
+  for (const rule of SERVER_MINTED_ITEMS) {
+    if (!items.some((i) => rule.pattern.test(i.key))) {
+      warn(`SERVER_MINTED_ITEMS: no item matches ${rule.pattern} (${rule.reason}) — the rule is stale`);
+      continue;
+    }
+    for (const item of candidates) if (rule.pattern.test(item.key)) minted.add(item.key);
+  }
+
+  return new Set(candidates.filter((i) => !minted.has(i.key)).map((i) => i.key));
 }
 
 /** Drops any candidate whose friendly id appears in one of `files`. */
@@ -2350,11 +2445,16 @@ function extractLocalized(L, structural) {
   const gamemodes = extractGameModes(guidIndex, L, monsterLookup, generators, itemsByGuid);
   const bastion = extractBastion(guidIndex, L, monsterLookup);
   if (bastion) gamemodes.push(bastion);
+  readModeUnlocks(gamemodes);
   const skilltree = extractSkillTree(guidIndex, quantumIndex, L, itemsByGuid);
   const combat = extractCombatMath();
   const ascension = extractAscension();
+  const enchantments = readEnchantments(
+    { catalog: ENCHANTMENT_CATALOG, client: ENCHANTMENT_CLIENT },
+    (key) => L.get(key), E.StatIndexes, warn,
+  );
 
-  return { items, sets, tables, monsters, hidden, banners, recipes, statuses, talents, buildings, gamemodes, skilltree, combat, ascension, itemsByGuid, fileByKey };
+  return { items, sets, tables, monsters, hidden, banners, recipes, statuses, talents, buildings, gamemodes, skilltree, combat, ascension, enchantments, itemsByGuid, fileByKey };
 }
 
 /**
@@ -2421,6 +2521,8 @@ function collectVocabulary(p) {
     upgradeCategory: uniq(p.gamemodes.flatMap((m) => (m.bastion?.upgrades ?? []).map((u) => u.category))),
     workType: uniq(p.buildings.map((x) => x.production?.workType)),
     stat: uniq([...p.sets.flatMap((s) => s.bonuses.map((b) => b.stat)),
+      ...(p.enchantments?.enchantments ?? []).map((e) => e.stat),
+      ...(p.enchantments?.sets ?? []).flatMap((s) => s.bonuses.map((b) => b.stat)),
       ...(p.skilltree?.nodes ?? []).flatMap((n) => n.grants.map((g) => g.stat))]),
     nodeType: uniq((p.skilltree?.nodes ?? []).map((n) => n.type)),
     enemyType: uniq(p.gamemodes.flatMap((m) => m.groups.flatMap((g) => g.sets.flatMap((s) => s.levels.flatMap((l) => l.waves.flatMap((w) => w.enemies.map((e) => e.type)))))))
@@ -2508,6 +2610,7 @@ function main() {
       elementIcons,
       combat: p.combat,
       ascension: p.ascension,
+      enchantments: p.enchantments,
       hiddenBosses: p.hidden,
       unreferencedItems: [...unreferenced].sort(),
       // Deduped: the same asset problem is reported once per language pass.
