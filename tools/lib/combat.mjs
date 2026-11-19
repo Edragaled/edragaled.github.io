@@ -79,6 +79,11 @@ export function readCombatMath({ stats, status, statusQtn, balanceSource }, bala
     elementCritShift: constant(statsSource, /efficiency = Efficiency\.Strong;[\s\S]*?critChance \+= ([^;]+);/, 'the element crit shift', onWarn),
     elementAccuracyShift: constant(statusSource, /IsStrongTo\(defendingElement\.Element\)\)\s*accuracy \+= ([^;]+);/, 'the element accuracy shift', onWarn),
     resistFloor: constant(statusSource, /resistChance = FPMath\.Max\(resistance - accuracy, ([^)]+)\)/, 'the resist floor', onWarn),
+    // Where the scale starts and stops. Without these the page cannot say the one
+    // thing readers ask: whether enough Resistance ever means "never".
+    resistanceBase: constant(statsSource, /StatIndexes\.Resistance => StatBuilder[^;]*?\.WithBase\(([^)]+)\)/, 'the base Resistance', onWarn),
+    resistanceMax: constant(statsSource, /StatIndexes\.Resistance => StatBuilder[^;]*?\.WithMax\(([^)]+)\)/, 'the Resistance cap', onWarn),
+    accuracyMax: constant(statsSource, /StatIndexes\.Accuracy => StatBuilder[^;]*?\.WithMax\(([^)]+)\)/, 'the Accuracy cap', onWarn),
     statusSlots: Number(/array<StatusEffect>\[(\d+)\]/.exec(readFileSync(statusQtn, 'utf8'))?.[1] ?? 0) || null,
 
     mitigatesDefaultOnly: mitigates,

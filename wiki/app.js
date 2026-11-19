@@ -1196,8 +1196,14 @@ function renderCombat() {
     </ul>
 
     <h2>${esc(t('combat.resist'))}</h2>
-    <p class="empty-note">${esc(t('combat.resistNote', { floor: pct(c.resistFloor, 0) }))}</p>
-    <p class="empty-note">${esc(t('combat.accuracyIsBonus'))}</p>
+    <p class="empty-note">${esc(t('combat.resistNote'))}</p>
+    <ul class="status-effects combat-notes" style="margin-bottom:14px">
+      ${c.resistanceBase != null ? `<li>${esc(t('combat.resistStart', { base: pct(c.resistanceBase, 0) }))}</li>` : ''}
+      <li>${esc(t('combat.resistFloorIsOnResisting', {
+    floor: pct(c.resistFloor, 0), lands: pct(1 - c.resistFloor, 0),
+  }))}</li>
+      ${c.resistanceMax != null ? `<li>${esc(t('combat.resistNoCeiling', { max: pct(c.resistanceMax, 0) }))}</li>` : ''}
+    </ul>
 
     <section class="panel calc">
       <label class="calc-row">

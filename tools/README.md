@@ -523,8 +523,18 @@ skip it. `DamageReduction` is separate and applies last, with a floor of 1 damag
 
 **Resistance.** `resistChance = max(Resistance − Accuracy, 0.15)`. Only debuffs
 roll: buffs are never resisted, they are blocked by Malediction instead, and
-Immunity blocks debuffs before any roll. The 15% floor is why no debuff is ever
-guaranteed.
+Immunity blocks debuffs before any roll.
+
+The 15% is a floor on **resisting**, not a cap on it, and the page now says both
+ends because readers read it as both. However much Accuracy an attacker stacks, a
+debuff lands at most 85% of the time; but Resistance is capped at 100% and starts
+at 15% for everyone, so a build that reaches the cap against an attacker with no
+Accuracy resists everything. That is the same shape as Summoners War, whose rate
+is also `Resistance − Accuracy` with a 15% floor and a 100% cap — and the reason
+enemies there, and here from Hard onwards, carry Accuracy of their own.
+
+The base and the two caps come from the `StatBuilder` lines in `Stats.Partial.cs`,
+read rather than retyped.
 
 The extractor checks the *shape* of both formulas, not just their constants — if
 `GetDamageReductionFactor` stops returning `reference / (reference + defense)`, or
